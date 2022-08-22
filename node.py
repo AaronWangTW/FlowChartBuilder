@@ -1,11 +1,23 @@
 import tkinter as tk
 from tkinter import LEFT, RIGHT, ttk, messagebox
-from typing import List
+from typing import Any, Dict, List
 
 
 class Node:
 
-    SETVARIABLE = 1
+    SETVARIABLE = "Set Variable"
+    IFBLOCK = "If Statement"
+    FORLOOP = "For Loop"
+    WHILELOOP = "While Loop"
+
+    types = [SETVARIABLE,IFBLOCK,FORLOOP,WHILELOOP]
+
+    descriptions = {
+        SETVARIABLE:"set up a variable of any customized name",
+        IFBLOCK:"If statement block that execute correspondingly to the result of the if statment",
+        FORLOOP:"A block that can execute its inside contents in a for loop structure",
+        WHILELOOP:"A block that can execute its inside contents in a while loop structure"
+    }
 
     def __init__(self) -> None:
         self.widget: tk.Widget = None
@@ -58,11 +70,18 @@ class Node:
     def placeNode(self):
         self.widget.pack()
 
+    def activate():
+        pass
+
+    def output():
+        pass
+
 
 class SetVariable(Node):
 
     def __init__(self, window) -> None:
         self.var = None
+        self.varName = ""
         self.widget = tk.Frame(window, bg="green", height=50, width=50, border=3)
         self.nextNode: Node = []
         self.lastNode: Node = []
@@ -76,3 +95,11 @@ class SetVariable(Node):
         self.widget.after(time,lambda:self.widget.config(background='red'))
         self.widget.after(time+500,lambda:self.widget.config(background='green'))
         
+    def setVar(self,var:Any):
+        self.var = var
+
+    def setVarName(self,varName:str):
+        self.varName = varName
+
+    def output(self,varDict:Dict):
+        varDict[self.varName]=self.var

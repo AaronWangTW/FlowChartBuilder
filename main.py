@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, messagebox, ttk
+from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar, mainloop, messagebox, ttk
+from tkinter import font
 from typing import List
 
 from node import Node, SetVariable
@@ -18,11 +19,62 @@ class App:
     waitFlag = tk.IntVar()
 
     nodes = []
+    variables = {}
 
     cancel = False
 
-    def addNode(type):
-        if type == Node.SETVARIABLE:
+    def createNode():
+
+        fontGroup = font.Font(size=13,family="Arial")
+        types = Node.types
+
+        choice = StringVar(App.root)
+        choice.set(types[0])
+
+        def close_event():
+            choice.set(None)
+            creator.destroy()
+            creator.update()
+
+        creator = tk.Toplevel()
+        creator.title("Block Creator")
+        creator.geometry("300x200+200+150")
+        creator.resizable(False,False)
+        creator.protocol("WM_DELETE_WINDOW",close_event)
+
+        desText = StringVar()
+        desText.set(Node.descriptions[choice.get()])
+        typeDescription = tk.Label(creator,textvariable=desText,wraplength=300,font=("Arial",13))
+        typeDescription.pack(pady=(15,0))
+
+        menuLabel = tk.Label(creator,text="Block Type",font=("Arial",10))
+        menuLabel.pack(pady=(15,0))
+        dropdown = OptionMenu(creator, choice, *types, command=lambda e:desText.set(Node.descriptions[choice.get()]))
+        dropdown['font']=fontGroup
+        dropdown.pack(pady=(0,15))
+
+        def end():
+            creator.destroy()
+            creator.update()
+
+        decide = tk.Button(creator,text="Create Block",command=end)
+        decide['font']=fontGroup
+        decide.pack()
+
+        creator.deiconify()
+
+        creator.wait_window(creator)
+
+        return choice
+
+    def addNode():
+        choice=App.createNode()
+        
+        if choice.get()=="None":
+            print("creator closed")
+            return
+
+        if choice.get() == Node.SETVARIABLE:
             App.nodes.append(SetVariable(App.workSpace))
         App.nodes[-1].placeNode()
         App.make_draggable(App.nodes[-1])
@@ -238,8 +290,7 @@ class App:
         App.canvas.pack_propagate(False)
         App.canvas.pack(expand=True, fill=BOTH)
 
-        addButton = tk.Button(App.toolBox, text="add", command=lambda: App.addNode(
-            Node.SETVARIABLE), height=10, width=22)
+        addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=10, width=22)
         addButton.pack()
         addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=2)
 
@@ -264,4 +315,5 @@ finally:
     App.initialize()
     App.menu()
     App.widgets()
-    App.root.mainloop()
+    # App.root.mainloop()
+    mainloop()
