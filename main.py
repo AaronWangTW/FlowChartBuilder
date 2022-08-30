@@ -74,10 +74,52 @@ class App:
             print("creator closed")
             return
 
-        if choice.get() == Node.SETVARIABLE:
-            App.nodes.append(SetVariable(App.workSpace))
+        match choice.get():
+            case Node.SETVARIABLE:
+                App.nodes.append(SetVariable(App.workSpace))
+            case Node.IFBLOCK:
+                App.nodes.append(SetVariable(App.workSpace))
+            case Node.FORLOOP:
+                App.nodes.append(SetVariable(App.workSpace))
+            case Node.WHILELOOP:
+                App.nodes.append(SetVariable(App.workSpace))
+            
         App.nodes[-1].placeNode()
         App.make_draggable(App.nodes[-1])
+
+    def removeNode():
+        App.cancel = False
+        frame = tk.Frame(App.workSpace)
+        text = tk.StringVar()
+        text.set("select the starting block")
+        label = tk.Label(App.canvas, textvariable=text,
+                         background="#c7c7c7", height=1, width=1000, font=("Arial", 18))
+        App.canvas.bind("<Button-3>",App.cancelFunc)
+
+        App.rootNode = None
+        App.waitFlag.set(0)
+        for node in App.nodes:
+            node.widget.bind("<ButtonRelease-1>", App.locateRootNode)
+        label.pack()
+        frame.wait_variable(App.waitFlag)
+
+        # cancel
+        if App.cancel:
+            text.set("canceled")
+            label.after(500, lambda:label.destroy())
+            return
+
+        label.destroy()
+        for node in App.nodes:
+            node.widget.bind("<ButtonRelease-1>", None)
+        App.canvas.bind("<Button-3>",None)
+        
+        for node in App.rootNode.nextNode:
+            node.lastNode.remove(App.rootNode)
+        for node in App.rootNode.lastNode:
+            node.nextNode.remove(App.rootNode)
+        App.nodes.remove(App.rootNode)
+        App.rootNode.destroy()
 
     def make_draggable(node: Node):
         node.widget.bind("<Button-1>", App.on_drag_start)
@@ -290,9 +332,12 @@ class App:
         App.canvas.pack_propagate(False)
         App.canvas.pack(expand=True, fill=BOTH)
 
-        addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=10, width=22)
-        addButton.pack()
-        addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=2)
+        addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=5, width=22)
+        addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=1)
+
+        removeButton = tk.Button(App.toolBox, text="remove", height=5, width=22,
+                               command=App.removeNode)
+        removeButton.grid(column=0, row=1, padx=20, pady=10, rowspan=1)
 
         linkButton = tk.Button(App.toolBox, text="link", height=5, width=22,
                                command=App.link)
@@ -315,5 +360,4 @@ finally:
     App.initialize()
     App.menu()
     App.widgets()
-    # App.root.mainloop()
     mainloop()

@@ -76,6 +76,9 @@ class Node:
     def output():
         pass
 
+    def destroy(self):
+        pass
+
 
 class SetVariable(Node):
 
@@ -103,3 +106,6 @@ class SetVariable(Node):
 
     def output(self,varDict:Dict):
         varDict[self.varName]=self.var
+
+    def destroy(self):
+        self.widget.destroy()
