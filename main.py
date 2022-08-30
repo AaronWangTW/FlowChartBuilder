@@ -120,6 +120,7 @@ class App:
             node.nextNode.remove(App.rootNode)
         App.nodes.remove(App.rootNode)
         App.rootNode.destroy()
+        App.rootNode.deleteConnectors(App.canvas)
 
     def make_draggable(node: Node):
         node.widget.bind("<Button-1>", App.on_drag_start)
@@ -268,12 +269,16 @@ class App:
 
         if App.nextNode in App.rootNode.nextNode:
             App.rootNode.nextNode.remove(App.nextNode)
+            App.rootNode.removeConnector(App.canvas,App.nextNode)
         if App.nextNode in App.rootNode.lastNode:
             App.rootNode.lastNode.remove(App.nextNode)
+            App.nextNode.removeConnector(App.canvas,App.rootNode)
         if App.rootNode in App.nextNode.nextNode:
             App.nextNode.nextNode.remove(App.rootNode)
+            App.nextNode.removeConnector(App.canvas,App.rootNode)
         if App.rootNode in App.nextNode.lastNode:
             App.nextNode.lastNode.remove(App.rootNode)
+            App.rootNode.removeConnector(App.canvas,App.nextNode)
 
     def run(delay: int):
         print("run")

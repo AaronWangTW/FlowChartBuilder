@@ -10,13 +10,13 @@ class Node:
     FORLOOP = "For Loop"
     WHILELOOP = "While Loop"
 
-    types = [SETVARIABLE,IFBLOCK,FORLOOP,WHILELOOP]
+    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP]
 
     descriptions = {
-        SETVARIABLE:"set up a variable of any customized name",
-        IFBLOCK:"If statement block that execute correspondingly to the result of the if statment",
-        FORLOOP:"A block that can execute its inside contents in a for loop structure",
-        WHILELOOP:"A block that can execute its inside contents in a while loop structure"
+        SETVARIABLE: "set up a variable of any customized name",
+        IFBLOCK: "If statement block that execute correspondingly to the result of the if statment",
+        FORLOOP: "A block that can execute its inside contents in a for loop structure",
+        WHILELOOP: "A block that can execute its inside contents in a while loop structure"
     }
 
     def __init__(self) -> None:
@@ -28,11 +28,11 @@ class Node:
     def connect(self, canva: tk.Canvas):
         if len(self.nextNode) > 0:
             try:
-                for id in self.connector:
-                    canva.delete(id)
+                for line in self.connector:
+                    canva.delete(line[1])
+                self.connector = []
             except:
                 print("no existing line")
-                #print(tag)
 
             ax0 = self.widget.winfo_x()
             ay0 = self.widget.winfo_y()
@@ -56,7 +56,7 @@ class Node:
                 line_id = canva.create_line(
                     x0, y0, x1, y1, fill="black", width=4, tags=())
                 canva.tag_lower(line_id)
-                self.connector.append(line_id)
+                self.connector.append((node, line_id))
         if len(self.lastNode) > 0:
             for node in self.lastNode:
                 node.connect(canva)
@@ -79,13 +79,20 @@ class Node:
     def destroy(self):
         pass
 
+    def deleteConnectors(self):
+        pass
+
+    def removeConnector(self,node):
+        pass
+
 
 class SetVariable(Node):
 
     def __init__(self, window) -> None:
         self.var = None
         self.varName = ""
-        self.widget = tk.Frame(window, bg="green", height=50, width=50, border=3)
+        self.widget = tk.Frame(
+            window, bg="green", height=50, width=50, border=3)
         self.nextNode: Node = []
         self.lastNode: Node = []
         self.connector = []
@@ -94,18 +101,35 @@ class SetVariable(Node):
         self.widget.pack()
         self.widget.place(x=0, y=0)
 
-    def activate(self, time:int):
-        self.widget.after(time,lambda:self.widget.config(background='red'))
-        self.widget.after(time+500,lambda:self.widget.config(background='green'))
-        
-    def setVar(self,var:Any):
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='red'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='green'))
+
+    def setVar(self, var: Any):
         self.var = var
 
-    def setVarName(self,varName:str):
+    def setVarName(self, varName: str):
         self.varName = varName
 
-    def output(self,varDict:Dict):
-        varDict[self.varName]=self.var
+    def output(self, varDict: Dict):
+        varDict[self.varName] = self.var
 
     def destroy(self):
         self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
