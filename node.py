@@ -1,5 +1,6 @@
+from sqlite3 import Row
 import tkinter as tk
-from tkinter import LEFT, RIGHT, ttk, messagebox
+from tkinter import BOTH, LEFT, RIGHT, X, OptionMenu, StringVar, ttk, messagebox, font
 from typing import Any, Dict, List
 
 
@@ -88,32 +89,57 @@ class Node:
 
 class SetVariable(Node):
 
+    types = ['int','string','double']
+
     def __init__(self, window) -> None:
-        self.var = None
-        self.varName = ""
+        self.varName = StringVar()
         self.widget = tk.Frame(
-            window, bg="green", height=50, width=50, border=3)
+            window, bg="#e6e6e6", height=100, width=200)
+        
+        self.typeChoice = StringVar()
+        self.typeChoice.set(SetVariable.types[0])
+        self.value = StringVar()
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="Set Variable",font=fontGroup, background="#c7c7c7", width=28)
+        self.titleLabel.grid(row=0, column=0, columnspan=3)
+
+        self.typeLabel = tk.Label(self.widget, text="Type:",font=fontGroup)
+        self.typeLabel.grid(row=1,column=0)
+        self.dropdown = OptionMenu(self.widget, self.typeChoice, *SetVariable.types)
+        self.dropdown['font']=fontGroup
+        self.dropdown.grid(row=1,column=1, columnspan=2)
+
+        self.nameLabel = tk.Label(self.widget, text="Variable Name:",font=fontGroup)
+        self.nameLabel.grid(row=2,column=0,padx=(20,5))
+        self.nameEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.varName,width=10)
+        self.nameEntry.grid(row=2,column=1,columnspan=2,pady=5,padx=(5,20))
+
+        self.valueLabel = tk.Label(self.widget, text="Variable Value:",font=fontGroup)
+        self.valueLabel.grid(row=3,column=0,padx=(20,5))
+        self.valueEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.value,width=10)
+        self.valueEntry.grid(row=3,column=1,columnspan=2,pady=5,padx=(5,20))
+        
         self.nextNode: Node = []
         self.lastNode: Node = []
         self.connector = []
 
     def placeNode(self):
-        self.widget.pack()
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
 
     def activate(self, time: int):
-        self.widget.after(time, lambda: self.widget.config(background='red'))
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
-            time+500, lambda: self.widget.config(background='green'))
-
-    def setVar(self, var: Any):
-        self.var = var
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
 
     def setVarName(self, varName: str):
         self.varName = varName
 
     def output(self, varDict: Dict):
-        varDict[self.varName] = self.var
+        varDict[self.varName] = self.value
 
     def destroy(self):
         self.widget.destroy()

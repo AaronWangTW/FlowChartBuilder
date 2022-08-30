@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar, mainloop, messagebox, ttk
+from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar, mainloop, messagebox
 from tkinter import font
 from typing import List
 
@@ -218,6 +218,7 @@ class App:
             if (App.nextNode not in App.rootNode.nextNode and App.rootNode not in App.nextNode.lastNode):
                 App.rootNode.nextNode.append(App.nextNode)
                 App.nextNode.lastNode.append(App.rootNode)
+                App.rootNode.connect(App.canvas)
         else:
             messagebox.showwarning('Recursive Linking',
                                    "Please do not link two nodes in a loop")
