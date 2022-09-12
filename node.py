@@ -86,19 +86,21 @@ class Node:
     def removeConnector(self,node):
         pass
 
-
 class SetVariable(Node):
 
     types = ['int','string','double']
 
-    def __init__(self, window) -> None:
-        self.varName = StringVar()
+    def __init__(self, window, varDict) -> None:
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=100, width=200)
         
+        self.lastVarName = ""
         self.typeChoice = StringVar()
         self.typeChoice.set(SetVariable.types[0])
         self.value = StringVar()
+        self.value.trace("w", lambda name, index, mode, value=self.value: self.output(varDict))
+        self.varName = StringVar()
+        self.varName.trace("w", lambda name, index, mode, varName=self.varName: self.output(varDict))
 
         fontGroup = font.Font(size=13,family="Arial")
 
@@ -139,7 +141,24 @@ class SetVariable(Node):
         self.varName = varName
 
     def output(self, varDict: Dict):
-        varDict[self.varName] = self.value
+        if self.varName.get() != "":
+            varDict.pop(self.lastVarName,None)
+            name = self.varName.get()
+            value = self.value.get()
+            match self.typeChoice.get():
+                case 'int':
+                    if value != "":
+                        varDict[name] = int(value)
+                    else:
+                        varDict[name] = None
+                case 'string':
+                    varDict[name] = value
+                case 'double':
+                    if value != "":
+                        varDict[name] = float(value)
+                    else:
+                        varDict[name] = None
+        self.lastVarName = self.varName.get()
 
     def destroy(self):
         self.widget.destroy()
@@ -159,3 +178,84 @@ class SetVariable(Node):
                     canvas.delete(line[1])
         except:
             print("no such line or node")
+
+class IfBlock(Node):
+
+    operators = ['>','<','==','!=']
+    types = ['int','string','double','variable']
+
+    def __init__(self, window, variables:Dict) -> None:
+        self.firstValue = StringVar()
+        self.firstValue.set('')
+        self.operator = StringVar()
+        self.secondType = StringVar()
+        self.secondValue = StringVar()
+        self.secondValue.set('')
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=100, width=200)
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.ifLabel = tk.Label(self.widget, text="If", font=fontGroup)
+        self.ifLabel.grid(row=1, column=0)
+
+        self.varNames = list(variables.keys())
+        self.firstValue.trace('w',lambda *args:self.refresh(variables))
+        self.firstItem = OptionMenu(self.widget,self.firstValue,*self.varNames)
+        self.firstItem['font']=fontGroup
+        self.firstItem.grid(row=1,column=1)
+
+        self.operatorChoice = OptionMenu(self.widget, self.operator, IfBlock.operators[0] ,*IfBlock.operators)
+        self.operatorChoice['font']=fontGroup
+        self.operatorChoice.grid(row=1,column=2)
+
+        self.secondTypeItem = OptionMenu(self.widget,self.secondType,*IfBlock.types)
+        self.secondTypeItem['font']=fontGroup
+        self.secondTypeItem.grid(row=0,column=3)
+
+        self.secondType.trace('w',lambda *args:self.changeType())
+
+        self.secondEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.secondValue,width=10)
+
+        self.secondValue.trace('w',lambda *args:self.refresh(variables))
+        self.secondItem = OptionMenu(self.widget,self.secondValue,*self.varNames)
+        self.secondItem['font']=fontGroup
+        self.secondItem.grid(row=1,column=3)
+
+        self.nextNode: Node = []
+        self.lastNode: Node = []
+        self.connector = []
+
+    def refresh(self, variables:Dict):
+        self.varNames = list(variables.keys())
+        self.firstItem['menu'].delete(0, 'end')
+        self.secondItem['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.firstItem['menu'].add_command(label=name, command=tk._setit(self.firstValue, name))
+            self.secondItem['menu'].add_command(label=name, command=tk._setit(self.secondValue, name))
+
+    def changeType(self):
+        match self.secondType.get():
+            case 'int' | 'string' | 'double':
+                self.secondValue.set('')
+                self.secondItem.grid_forget()
+                self.secondEntry.grid(row=1,column=3)
+            case 'variable':
+                self.secondValue.set('')
+                self.secondEntry.grid_forget()
+                self.secondItem.grid(row=1,column=3)
+
+    def placeNode(self):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+    
+    def activate():
+        pass
+
+    def destroy(self):
+        return super().destroy()
+
+    def output():
+        pass

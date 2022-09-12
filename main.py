@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import Node, SetVariable
+from node import IfBlock, Node, SetVariable
 
 
 class App:
@@ -76,13 +76,13 @@ class App:
 
         match choice.get():
             case Node.SETVARIABLE:
-                App.nodes.append(SetVariable(App.workSpace))
+                App.nodes.append(SetVariable(App.workSpace, App.variables))
             case Node.IFBLOCK:
-                App.nodes.append(SetVariable(App.workSpace))
+                App.nodes.append(IfBlock(App.workSpace,App.variables))
             case Node.FORLOOP:
-                App.nodes.append(SetVariable(App.workSpace))
+                App.nodes.append(SetVariable(App.workSpace, App.variables))
             case Node.WHILELOOP:
-                App.nodes.append(SetVariable(App.workSpace))
+                App.nodes.append(SetVariable(App.workSpace, App.variables))
             
         App.nodes[-1].placeNode()
         App.make_draggable(App.nodes[-1])
