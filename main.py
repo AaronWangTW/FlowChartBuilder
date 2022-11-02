@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import IfBlock, Node, SetVariable
+from node import ForLoop, IfBlock, Node, SetVariable
 
 
 class App:
@@ -12,7 +12,9 @@ class App:
     toolBox = tk.Frame(root, bg="#c7cdd6", height=760, width=1200/6)
     workSpace = tk.Frame(root, bg="white", height=760, width=5*1200/6)
     canvas = tk.Canvas(workSpace, width=5*1200/6,
-                       height=760, background="white")
+                       height=760, background="white", scrollregion=(0,0,2000,2000))
+    hbar = tk.Scrollbar(workSpace,orient="horizontal")
+    vbar = tk.Scrollbar(workSpace,orient="vertical")
 
     rootNode: Node = None
     nextNode: Node = None
@@ -80,7 +82,7 @@ class App:
             case Node.IFBLOCK:
                 App.nodes.append(IfBlock(App.workSpace,App.variables))
             case Node.FORLOOP:
-                App.nodes.append(SetVariable(App.workSpace, App.variables))
+                App.nodes.append(ForLoop(App.workSpace))
             case Node.WHILELOOP:
                 App.nodes.append(SetVariable(App.workSpace, App.variables))
             
@@ -336,7 +338,14 @@ class App:
         App.toolBox.pack(side=LEFT, expand=True, fill=BOTH)
         App.workSpace.pack(expand=True, fill=BOTH)
         App.canvas.pack_propagate(False)
-        App.canvas.pack(expand=True, fill=BOTH)
+
+        App.hbar.pack(side="bottom",fill="x")
+        App.hbar.config(command=App.canvas.xview)
+        App.vbar.pack(side="right",fill="y")
+        App.vbar.config(command=App.canvas.yview)
+        App.canvas.config(xscrollcommand=App.hbar.set, yscrollcommand=App.vbar.set)
+
+        App.canvas.pack(expand=True, fill=BOTH,side="left")
 
         addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=5, width=22)
         addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=1)

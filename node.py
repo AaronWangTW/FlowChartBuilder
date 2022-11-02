@@ -259,3 +259,26 @@ class IfBlock(Node):
 
     def output():
         pass
+
+class ForLoop(Node):
+
+    def __init__(self, window) -> None:
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=200, width=150)
+
+        self.workspace = tk.Frame(self.widget,bg="#FFF", height=150, width=100)
+        
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="For Loop",font=fontGroup, background="#c7c7c7", width=28)
+        self.titleLabel.pack()
+
+        self.nextNode: Node = []
+        self.lastNode: Node = []
+        self.connector = []
+    
+    def placeNode(self):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.workspace.pack(side="right")
+        self.widget.pack_propagate(False)
+        self.widget.place(x=0, y=0)
