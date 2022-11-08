@@ -78,15 +78,15 @@ class App:
 
         match choice.get():
             case Node.SETVARIABLE:
-                App.nodes.append(SetVariable(App.workSpace, App.variables))
+                App.nodes.append(SetVariable(App.canvas, App.variables))
             case Node.IFBLOCK:
-                App.nodes.append(IfBlock(App.workSpace,App.variables))
+                App.nodes.append(IfBlock(App.canvas,App.variables))
             case Node.FORLOOP:
-                App.nodes.append(ForLoop(App.workSpace))
+                App.nodes.append(ForLoop(App.canvas))
             case Node.WHILELOOP:
-                App.nodes.append(SetVariable(App.workSpace, App.variables))
+                App.nodes.append(SetVariable(App.canvas, App.variables))
             
-        App.nodes[-1].placeNode()
+        App.nodes[-1].placeNode(App.canvas)
         App.make_draggable(App.nodes[-1])
 
     def removeNode():
@@ -129,29 +129,28 @@ class App:
         node.widget.bind("<B1-Motion>", App.on_drag_motion)
         node.widget._node = node
 
+    def on_drag_motion(event:tk.Event):
+        x = event.x-event.widget._drag_start_x
+        y = event.y-event.widget._drag_start_y
+
+        pos = App.canvas.bbox(event.widget._node.window)
+
+        if pos[2] + x > 2000:
+            x = 0
+        if pos[3] + y > 2000:
+            y = 0
+        if pos[0] + x < 0:
+            x = 0
+        if pos[1] + y < 0:
+            y = 0
+
+        App.canvas.move(event.widget._node.window,x,y)
+        event.widget._node.connect(App.canvas)
+
     def on_drag_start(event:tk.Event):
         widget = event.widget
         widget._drag_start_x = event.x
         widget._drag_start_y = event.y
-
-    def on_drag_motion(event:tk.Event):
-        widget = event.widget
-        window_width = App.workSpace.winfo_width()-widget.winfo_width()
-        window_height = App.workSpace.winfo_height()-widget.winfo_height()
-        x = widget.winfo_x() - widget._drag_start_x + event.x
-        y = widget.winfo_y() - widget._drag_start_y + event.y
-        if (x < 0):
-            x = 0
-        if (x > window_width):
-            x = window_width
-        if (y < 0):
-            y = 0
-        if (y > window_height):
-            y = window_height
-        widget.place(x=x, y=y)
-
-        node: Node = event.widget._node
-        node.connect(App.canvas)
 
     def cancelFunc(event: tk.Event):
         App.cancel = True
@@ -350,45 +349,11 @@ class App:
         App.canvas.bind_all("<MouseWheel>",lambda e: App.canvas.yview_scroll(int(-1*(e.delta/120)),"units"))
         #pack after setting up scrollbars 
         App.canvas.pack(expand=True, fill=BOTH,side="left")
-        
-        # Testing frame that moves with the page
-        testFrame = tk.Frame(App.canvas,width=200, height=200, background="black")
-
-        testFrame.pack()
-
-        def moveWindow(event:tk.Event,widget):
-            x = event.x-testFrame.startX
-            y = event.y-testFrame.startY
-
-            pos = App.canvas.bbox(widget)
-
-            if pos[2] + x > 2000:
-                x = 0
-            if pos[3] + y > 2000:
-                y = 0
-            if pos[0] + x < 0:
-                x = 0
-            if pos[1] + y < 0:
-                y = 0
-
-            App.canvas.move(widget,x,y)
-
-        def startPos(event:tk.Event):
-            testFrame.startX = event.x
-            testFrame.startY = event.y
-        
-        window=App.canvas.create_window(0,0,window=testFrame, anchor="nw")
-
-        testFrame.bind("<Button-1>", startPos)
-        testFrame.bind("<B1-Motion>", lambda e:moveWindow(e,window))
-        
-        
 
         addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=5, width=22)
         addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=1)
 
-        removeButton = tk.Button(App.toolBox, text="remove", height=5, width=22,
-                               command=App.removeNode)
+        removeButton = tk.Button(App.toolBox, text="remove", height=5, width=22, command=App.removeNode)
         removeButton.grid(column=0, row=1, padx=20, pady=10, rowspan=1)
 
         linkButton = tk.Button(App.toolBox, text="link", height=5, width=22,

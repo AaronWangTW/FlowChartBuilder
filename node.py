@@ -25,6 +25,7 @@ class Node:
         self.nextNode: List[Node] = []
         self.lastNode: List[Node] = []
         self.connector = []
+        self.window = ""
 
     def connect(self, canva: tk.Canvas):
         if len(self.nextNode) > 0:
@@ -35,16 +36,18 @@ class Node:
             except:
                 print("no existing line")
 
-            ax0 = self.widget.winfo_x()
-            ay0 = self.widget.winfo_y()
-            ax1 = ax0+self.widget.winfo_width()
-            ay1 = ay0+self.widget.winfo_height()
+            pos = canva.bbox(self.window)
+            ax0 = pos[0]
+            ay0 = pos[1]
+            ax1 = pos[2]
+            ay1 = pos[3]
 
             for node in self.nextNode:
-                bx0 = node.widget.winfo_x()
-                by0 = node.widget.winfo_y()
-                bx1 = bx0+node.widget.winfo_width()
-                by1 = by0+node.widget.winfo_height()
+                pos = canva.bbox(node.window)
+                bx0 = pos[0]
+                by0 = pos[1]
+                bx1 = pos[2]
+                by1 = pos[3]
 
                 x0 = (ax0 + ax1) / 2
                 y0 = (ay0 + ay1) / 2
@@ -80,8 +83,13 @@ class Node:
     def destroy(self):
         pass
 
-    def deleteConnectors(self):
-        pass
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
 
     def removeConnector(self,node):
         pass
@@ -127,10 +135,12 @@ class SetVariable(Node):
         self.lastNode: Node = []
         self.connector = []
 
-    def placeNode(self):
+    def placeNode(self, canvas):
         self.widget.pack(expand=True, fill=BOTH)
         self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
     def activate(self, time: int):
         self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
@@ -246,10 +256,12 @@ class IfBlock(Node):
                 self.secondEntry.grid_forget()
                 self.secondItem.grid(row=1,column=3)
 
-    def placeNode(self):
+    def placeNode(self,canvas):
         self.widget.pack(expand=True, fill=BOTH)
         self.widget.grid_propagate(False)
         self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
     
     def activate():
         pass
@@ -264,21 +276,31 @@ class ForLoop(Node):
 
     def __init__(self, window) -> None:
         self.widget = tk.Frame(
-            window, bg="#e6e6e6", height=200, width=150)
+            window, bg="#e6e6e6", height=400, width=300)
 
-        self.workspace = tk.Frame(self.widget,bg="#FFF", height=150, width=100)
+        self.workspace = tk.Frame(self.widget,bg="#FFF", height=300, width=250)
         
         fontGroup = font.Font(size=13,family="Arial")
 
-        self.titleLabel = tk.Label(self.widget, text="For Loop",font=fontGroup, background="#c7c7c7", width=28)
+        self.titleLabel = tk.Label(self.widget, text="For Loop",font=fontGroup, background="#c7c7c7", width=self.widget.winfo_screenwidth())
         self.titleLabel.pack()
+
+        self.addButton = tk.Button(self.widget, text="+",command=self.addNode, height=1,width=4)
+        self.addButton.pack(side="top",anchor="ne",padx=10,pady=6)
+
+        self.magnets = []
 
         self.nextNode: Node = []
         self.lastNode: Node = []
         self.connector = []
     
-    def placeNode(self):
+    def placeNode(self, canvas):
         self.widget.pack(expand=True, fill=BOTH)
-        self.workspace.pack(side="right")
+        self.workspace.pack(side="right", anchor="ne")
         self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def addNode(self):
+        pass
