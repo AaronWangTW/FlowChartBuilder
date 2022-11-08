@@ -339,13 +339,50 @@ class App:
         App.workSpace.pack(expand=True, fill=BOTH)
         App.canvas.pack_propagate(False)
 
+        #add scrollbars
         App.hbar.pack(side="bottom",fill="x")
         App.hbar.config(command=App.canvas.xview)
         App.vbar.pack(side="right",fill="y")
         App.vbar.config(command=App.canvas.yview)
-        App.canvas.config(xscrollcommand=App.hbar.set, yscrollcommand=App.vbar.set)
-
+        #scroll region set to all so all objects follow
+        App.canvas.config(xscrollcommand=App.hbar.set, yscrollcommand=App.vbar.set, scrollregion=App.canvas.bbox("all"))
+        #setting up scrolling binding
+        App.canvas.bind_all("<MouseWheel>",lambda e: App.canvas.yview_scroll(int(-1*(e.delta/120)),"units"))
+        #pack after setting up scrollbars 
         App.canvas.pack(expand=True, fill=BOTH,side="left")
+        
+        # Testing frame that moves with the page
+        testFrame = tk.Frame(App.canvas,width=200, height=200, background="black")
+
+        testFrame.pack()
+
+        def moveWindow(event:tk.Event,widget):
+            x = event.x-testFrame.startX
+            y = event.y-testFrame.startY
+
+            pos = App.canvas.bbox(widget)
+
+            if pos[2] + x > 2000:
+                x = 0
+            if pos[3] + y > 2000:
+                y = 0
+            if pos[0] + x < 0:
+                x = 0
+            if pos[1] + y < 0:
+                y = 0
+
+            App.canvas.move(widget,x,y)
+
+        def startPos(event:tk.Event):
+            testFrame.startX = event.x
+            testFrame.startY = event.y
+        
+        window=App.canvas.create_window(0,0,window=testFrame, anchor="nw")
+
+        testFrame.bind("<Button-1>", startPos)
+        testFrame.bind("<B1-Motion>", lambda e:moveWindow(e,window))
+        
+        
 
         addButton = tk.Button(App.toolBox, text="add", command=App.addNode, height=5, width=22)
         addButton.grid(column=0, row=0, padx=20, pady=20, rowspan=1)
