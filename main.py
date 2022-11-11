@@ -82,7 +82,7 @@ class App:
             case Node.IFBLOCK:
                 App.nodes.append(IfBlock(App.canvas,App.variables))
             case Node.FORLOOP:
-                App.nodes.append(ForLoop(App.canvas))
+                App.nodes.append(ForLoop(App.canvas,App.createNode, App.variables))
             case Node.WHILELOOP:
                 App.nodes.append(SetVariable(App.canvas, App.variables))
             

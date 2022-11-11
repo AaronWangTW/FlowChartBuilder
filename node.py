@@ -1,4 +1,3 @@
-from sqlite3 import Row
 import tkinter as tk
 from tkinter import BOTH, LEFT, RIGHT, X, OptionMenu, StringVar, ttk, messagebox, font
 from typing import Any, Dict, List
@@ -12,6 +11,8 @@ class Node:
     WHILELOOP = "While Loop"
 
     types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP]
+
+    sizes = {SETVARIABLE:125,IFBLOCK:100}
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
@@ -101,6 +102,8 @@ class SetVariable(Node):
     def __init__(self, window, varDict) -> None:
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=100, width=200)
+
+        self.blockType = Node.SETVARIABLE
         
         self.lastVarName = ""
         self.typeChoice = StringVar()
@@ -195,6 +198,8 @@ class IfBlock(Node):
     types = ['int','string','double','variable']
 
     def __init__(self, window, variables:Dict) -> None:
+        self.blockType = Node.IFBLOCK
+
         self.firstValue = StringVar()
         self.firstValue.set('')
         self.operator = StringVar()
@@ -274,11 +279,18 @@ class IfBlock(Node):
 
 class ForLoop(Node):
 
-    def __init__(self, window) -> None:
-        self.widget = tk.Frame(
-            window, bg="#e6e6e6", height=400, width=300)
+    def __init__(self, window, choice, varDict) -> None:
+        
+        self.blockType = Node.FORLOOP
+        self.parent = None
 
-        self.workspace = tk.Frame(self.widget,bg="#FFF", height=300, width=250)
+        self.size = 200
+        self.layer = 0
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=self.size, width=400+self.layer*50)
+
+        self.workspace = tk.Canvas(self.widget,bg="#FFF", height=self.size-100, width=350+self.layer*50)
         
         fontGroup = font.Font(size=13,family="Arial")
 
@@ -286,9 +298,13 @@ class ForLoop(Node):
         self.titleLabel.pack()
 
         self.addButton = tk.Button(self.widget, text="+",command=self.addNode, height=1,width=4)
-        self.addButton.pack(side="top",anchor="ne",padx=10,pady=6)
+        self.addButton.pack(side="top",anchor="nw",padx=10,pady=6)
 
         self.magnets = []
+        self.nodes = []
+
+        self.choice = choice
+        self.varDict = varDict
 
         self.nextNode: Node = []
         self.lastNode: Node = []
@@ -302,5 +318,70 @@ class ForLoop(Node):
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
+    def _make_draggable(self,node:Node):
+        node.widget.bind("<Button-1>", self._on_drag_start)
+        node.widget.bind("<B1-Motion>", self._on_drag_motion)
+        node.widget._node = node
+
+    def _on_drag_start(self,event:tk.Event):
+        widget = event.widget
+        widget._drag_start_y = event.y
+
+    def _on_drag_motion(self,event:tk.Event):
+        y = event.y-event.widget._drag_start_y
+
+        pos = self.workspace.bbox(event.widget._node.window)
+
+        if pos[3] + y > self.size-100:
+            y = 0
+        if pos[1] + y < 0:
+            y = 0
+
+        self.workspace.move(event.widget._node.window,0,y)
+
+    def getDepth(self,node):
+        if node == None:
+            return 0
+        else:
+            maxDepth = 0
+            for n in node.nodes:
+                if Node.sizes.get(n.blockType,0) == 0:
+                    depth = node.getDepth(n)
+                    if depth+1 > maxDepth:
+                        maxDepth = depth+1
+            return maxDepth
+
+
     def addNode(self):
-        pass
+        choice = self.choice()
+        match choice.get():
+            case Node.SETVARIABLE:
+                self.nodes.append(SetVariable(self.workspace, self.varDict))
+            case Node.IFBLOCK:
+                self.nodes.append(IfBlock(self.workspace,self.varDict))
+            case Node.FORLOOP:
+                loop = ForLoop(self.workspace,self.choice,self.varDict)
+                self.nodes.append(loop)
+                loop.parent = self
+            case Node.WHILELOOP:
+                self.nodes.append(SetVariable(self.workspace,self.varDict))
+        
+        self.nodes[-1].placeNode(self.workspace)
+        self._make_draggable(self.nodes[-1])
+        self.adjustSize()
+        if self.parent != None:
+            self.parent.adjustSize()
+    
+    def adjustSize(self):
+        self.size = 0
+        for node in self.nodes:
+            size=self.sizes.get(node.blockType,0)
+            if size == 0:
+                self.size+=node.size
+            else:
+                self.size+=size
+        self.size += 100
+        self.layer = self.getDepth(self)
+        print(self.getDepth(self))
+        self.widget.configure(height=self.size,width=400+self.layer*50)
+        self.workspace.configure(height=self.size-100,width=350+self.layer*50)
