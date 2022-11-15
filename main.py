@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import ForLoop, IfBlock, Node, SetVariable
+from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop
 
 
 class App:
@@ -84,7 +84,7 @@ class App:
             case Node.FORLOOP:
                 App.nodes.append(ForLoop(App.canvas,App.createNode, App.variables))
             case Node.WHILELOOP:
-                App.nodes.append(SetVariable(App.canvas, App.variables))
+                App.nodes.append(WhileLoop(App.canvas,App.createNode,App.variables))
             
         App.nodes[-1].placeNode(App.canvas)
         App.make_draggable(App.nodes[-1])
