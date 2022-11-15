@@ -424,7 +424,6 @@ class ForLoop(Node):
         elif abs(currentMagnet-(pos[1]+y)) < self.snap_distance:
             y+=currentMagnet-(pos[1]+y)
 
-        print(nodeIndex)
         self.workspace.move(event.widget._node.window,0,y)
 
     def getDepth(self,node):
@@ -466,8 +465,7 @@ class ForLoop(Node):
                 size=self.nodes[i].size
             currentMagnet += size
         self.workspace.move(self.nodes[-1].window,0,currentMagnet)
-        
-    
+          
     def adjustSize(self):
         self.size = 0
         for node in self.nodes:
@@ -483,8 +481,10 @@ class ForLoop(Node):
 
 class WhileLoop(Node):
 
-    def __init__(self, window, choice, varDict) -> None:
-        
+    operators = ['>','<','>=','<=']
+
+    def __init__(self, window, choice, varDict:Dict) -> None:
+        super().__init__()
         self.blockType = Node.WHILELOOP
         self.parent = None
 
@@ -495,16 +495,50 @@ class WhileLoop(Node):
             window, bg="#e6e6e6", height=self.size, width=400+self.layer*50)
 
         self.workspace = tk.Canvas(self.widget,bg="#FFF", height=self.size-100, width=350+self.layer*50)
+
+        self.header = tk.Frame(self.widget,height=50,width=400+self.layer*50,bg="#e6e6e6")
         
         fontGroup = font.Font(size=13,family="Arial")
 
         self.titleLabel = tk.Label(self.widget, text="While Loop",font=fontGroup, background="#c7c7c7", width=self.widget.winfo_screenwidth())
         self.titleLabel.pack()
 
-        self.addButton = tk.Button(self.widget, text="+",command=self.addNode, height=1,width=4)
-        self.addButton.pack(side="top",anchor="nw",padx=10,pady=6)
+        self.addButton = tk.Button(self.header, text="+",command=self.addNode, height=1,width=4)
+        self.addButton.pack(side="left",padx=10,pady=6)
 
-        self.magnets = []
+        self.whileLabel = tk.Label(self.header,text="while",font=fontGroup,bg="#e6e6e6")
+        self.whileLabel.pack(side="left",padx=5)
+
+        self.var = StringVar()
+
+        self.varChoice = OptionMenu(self.header, self.var, *varDict)
+        self.varChoice['font']=fontGroup
+        self.varChoice.pack(side="left")
+
+        self.operator = StringVar()
+
+        self.operatorChoice = OptionMenu(self.header, self.operator, *ForLoop.operators)
+        self.operatorChoice['font']=fontGroup
+        self.operatorChoice.pack(side="left")
+
+        self.targetType = StringVar()
+
+        self.targetTypeChoice = OptionMenu(self.header,self.targetType,*IfBlock.types)
+        self.targetTypeChoice['font']=fontGroup
+        self.targetTypeChoice.pack(side="left")
+
+        self.targetType.trace('w',lambda *args:self.changeType())
+
+        self.targetValue = StringVar()
+
+        self.targetEntry = tk.Entry(self.header,font=fontGroup,textvariable=self.targetValue,width=10)
+        self.varNames = varDict.keys()
+
+        self.targetValue.trace('w',lambda *args:self.refresh(varDict))
+        self.targetChoice = OptionMenu(self.header,self.targetValue,*self.varNames)
+        self.targetChoice['font']=fontGroup
+        self.targetChoice.pack(side="left")
+
         self.nodes = []
 
         self.choice = choice
@@ -516,11 +550,29 @@ class WhileLoop(Node):
     
     def placeNode(self, canvas):
         self.widget.pack(expand=True, fill=BOTH)
-        self.workspace.pack(side="right", anchor="ne")
+        self.header.pack(side="top",anchor="nw")
+        self.workspace.pack(side="top", anchor="ne")
         self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def changeType(self):
+        match self.targetType.get():
+            case 'int' | 'string' | 'double':
+                self.targetValue.set('')
+                self.targetChoice.pack_forget()
+                self.targetEntry.pack(side="left")
+            case 'variable':
+                self.targetValue.set('')
+                self.targetEntry.pack_forget()
+                self.targetChoice.pack(side="left")
+
+    def refresh(self,varDict:Dict):
+        self.varNames = list(varDict.keys())
+        self.targetChoice['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.targetChoice['menu'].add_command(label=name, command=tk._setit(self.targetValue, name))
 
     def _make_draggable(self,node:Node):
         node.widget.bind("<Button-1>", self._on_drag_start)
@@ -540,6 +592,38 @@ class WhileLoop(Node):
             y = 0
         if pos[1] + y < 0:
             y = 0
+
+        nodeIndex = self.nodes.index(event.widget._node)
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.nodes[i].blockType,0)
+            if size == 0:
+                size=self.nodes[i].size
+            currentMagnet += size
+        
+        lastBlockHeight = Node.sizes.get(self.nodes[nodeIndex-1].blockType,0)
+        if lastBlockHeight == 0:
+            lastBlockHeight = self.nodes[nodeIndex-1].size
+        thisBlockHeight = Node.sizes.get(self.nodes[nodeIndex].blockType,0)
+        if thisBlockHeight == 0:
+            thisBlockHeight = self.nodes[nodeIndex].size
+        lastMagnet = currentMagnet-lastBlockHeight
+        if nodeIndex == 0:
+            lastMagnet = 0
+        nextMagnet = currentMagnet+thisBlockHeight
+
+        if abs(lastMagnet-(pos[1] + y)) < self.snap_distance:
+            y+=lastMagnet - (pos[1] + y)
+            if nodeIndex != 0:
+                self.workspace.move(self.nodes[nodeIndex-1].window,0,thisBlockHeight)
+                self.nodes[nodeIndex-1], self.nodes[nodeIndex] = self.nodes[nodeIndex], self.nodes[nodeIndex-1]
+        elif abs(nextMagnet-(pos[1] + y)) < self.snap_distance:
+            y+=nextMagnet - (pos[1] + y)
+            if nodeIndex != len(self.nodes)-1:
+                self.workspace.move(self.nodes[nodeIndex+1].window,0,-thisBlockHeight)
+                self.nodes[nodeIndex+1], self.nodes[nodeIndex] = self.nodes[nodeIndex], self.nodes[nodeIndex+1]
+        elif abs(currentMagnet-(pos[1]+y)) < self.snap_distance:
+            y+=currentMagnet-(pos[1]+y)
 
         self.workspace.move(event.widget._node.window,0,y)
 
@@ -574,7 +658,15 @@ class WhileLoop(Node):
         self.adjustSize()
         if self.parent != None:
             self.parent.adjustSize()
-    
+        nodeIndex = len(self.nodes)-1
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.nodes[i].blockType,0)
+            if size == 0:
+                size=self.nodes[i].size
+            currentMagnet += size
+        self.workspace.move(self.nodes[-1].window,0,currentMagnet)
+          
     def adjustSize(self):
         self.size = 0
         for node in self.nodes:
@@ -585,6 +677,5 @@ class WhileLoop(Node):
                 self.size+=size
         self.size += 100
         self.layer = self.getDepth(self)
-        print(self.getDepth(self))
         self.widget.configure(height=self.size,width=400+self.layer*50)
         self.workspace.configure(height=self.size-100,width=350+self.layer*50)
