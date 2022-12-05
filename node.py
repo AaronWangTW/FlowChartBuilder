@@ -1,4 +1,5 @@
 import tkinter as tk
+import math
 from tkinter import BOTH, LEFT, RIGHT, X, OptionMenu, StringVar, ttk, messagebox, font
 from typing import Any, Dict, List
 
@@ -9,8 +10,9 @@ class Node:
     IFBLOCK = "If Statement"
     FORLOOP = "For Loop"
     WHILELOOP = "While Loop"
+    NEWIFBLOCK = "New If Block"
 
-    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP]
+    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP, NEWIFBLOCK]
 
     sizes = {SETVARIABLE:125,IFBLOCK:100}
 
@@ -18,7 +20,8 @@ class Node:
         SETVARIABLE: "set up a variable of any customized name",
         IFBLOCK: "If statement block that execute correspondingly to the result of the if statment",
         FORLOOP: "A block that can execute its inside contents in a for loop structure",
-        WHILELOOP: "A block that can execute its inside contents in a while loop structure"
+        WHILELOOP: "A block that can execute its inside contents in a while loop structure",
+        NEWIFBLOCK: "draft of new if block"
     }
 
     def __init__(self) -> None:
@@ -209,36 +212,46 @@ class IfBlock(Node):
         self.secondValue = StringVar()
         self.secondValue.set('')
 
+        self.size = 200
+        self.layer = 0
+
         self.widget = tk.Frame(
-            window, bg="#e6e6e6", height=100, width=200)
+            window, bg="#e6e6e6", height=self.size, width=400+self.layer*50)
+
+        self.workspace = tk.Canvas(self.widget,bg="#FFF", height=self.size-100, width=350+self.layer*50)
+
+        self.header = tk.Frame(self.widget,height=50,width=400+self.layer*50,bg="#e6e6e6")
 
         fontGroup = font.Font(size=13,family="Arial")
 
-        self.ifLabel = tk.Label(self.widget, text="If", font=fontGroup)
+        self.titleLabel = tk.Label(self.widget, text="If Block",font=fontGroup, background="#c7c7c7", width=self.widget.winfo_screenwidth())
+        self.titleLabel.pack()
+
+        self.ifLabel = tk.Label(self.header, text="If", font=fontGroup)
         self.ifLabel.grid(row=1, column=0)
 
         self.varNames = list(variables.keys())
         self.firstValue.trace('w',lambda *args:self.refresh(variables))
-        self.firstItem = OptionMenu(self.widget,self.firstValue,*self.varNames)
+        self.firstItem = OptionMenu(self.header,self.firstValue,'',*self.varNames)
         self.firstItem['font']=fontGroup
         self.firstItem.grid(row=1,column=1)
 
-        self.operatorChoice = OptionMenu(self.widget, self.operator, IfBlock.operators[0] ,*IfBlock.operators)
+        self.operatorChoice = OptionMenu(self.header, self.operator, IfBlock.operators[0] ,*IfBlock.operators)
         self.operatorChoice['font']=fontGroup
         self.operatorChoice.grid(row=1,column=2)
 
-        self.secondTypeItem = OptionMenu(self.widget,self.secondType,*IfBlock.types)
+        self.secondTypeItem = OptionMenu(self.header,self.secondType,*IfBlock.types)
         self.secondTypeItem['font']=fontGroup
-        self.secondTypeItem.grid(row=0,column=3)
+        self.secondTypeItem.grid(row=1,column=3)
 
         self.secondType.trace('w',lambda *args:self.changeType())
 
-        self.secondEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.secondValue,width=10)
+        self.secondEntry = tk.Entry(self.header,font=fontGroup,textvariable=self.secondValue,width=10)
 
         self.secondValue.trace('w',lambda *args:self.refresh(variables))
-        self.secondItem = OptionMenu(self.widget,self.secondValue,*self.varNames)
+        self.secondItem = OptionMenu(self.header,self.secondValue,'',*self.varNames)
         self.secondItem['font']=fontGroup
-        self.secondItem.grid(row=1,column=3)
+        self.secondItem.grid(row=1,column=4)
 
         self.nextNode: Node = []
         self.lastNode: Node = []
@@ -257,16 +270,128 @@ class IfBlock(Node):
             case 'int' | 'string' | 'double':
                 self.secondValue.set('')
                 self.secondItem.grid_forget()
-                self.secondEntry.grid(row=1,column=3)
+                self.secondEntry.grid(row=1,column=4)
             case 'variable':
                 self.secondValue.set('')
                 self.secondEntry.grid_forget()
-                self.secondItem.grid(row=1,column=3)
+                self.secondItem.grid(row=1,column=4)
 
     def placeNode(self,canvas):
         self.widget.pack(expand=True, fill=BOTH)
-        self.widget.grid_propagate(False)
+        self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
+        self.header.pack(side="top",anchor="nw")
+        self.workspace.pack(side="top", anchor="ne")
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+    
+    def activate():
+        pass
+
+    def destroy(self):
+        return super().destroy()
+
+    def output():
+        pass
+
+class NewIfBlock(Node):
+    
+    operators = ['>','<','==','!=','>=','<=']
+    types = ['int','string','double','variable']
+
+    def __init__(self, window, variables:Dict) -> None:
+        self.blockType = Node.IFBLOCK
+
+        self.firstValue = StringVar()
+        self.firstValue.set('')
+        self.operator = StringVar()
+        self.secondType = StringVar()
+        self.secondValue = StringVar()
+        self.secondValue.set('')
+
+        self.size = 200
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=self.size, width=400+self.size*0.5)
+
+        self.workspace = tk.Canvas(self.widget,bg="#FFF", height=self.size-100, width=350)
+
+        self.background = tk.Canvas(self.widget,background="white",height=160,width=280)
+
+        self.header = tk.Frame(self.background,height=5,width=40,bg="white")
+
+        rhombusPoints = [
+            5,self.background.winfo_reqheight()/2,
+            self.background.winfo_reqwidth()/2,self.background.winfo_reqheight()-5,
+            self.background.winfo_reqwidth()-5,self.background.winfo_reqheight()/2,
+            self.background.winfo_reqwidth()/2,5
+        ]
+        self.shape = self.background.create_polygon(rhombusPoints,outline="black",fill="white",width=2)
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        # self.titleLabel = tk.Label(self.widget, text="If Block",font=fontGroup, background="#c7c7c7", width=self.widget.winfo_screenwidth())
+        # self.titleLabel.pack()
+
+        self.ifLabel = tk.Label(self.header, text="If", font=fontGroup)
+        self.ifLabel.grid(row=1, column=0)
+
+        self.varNames = list(variables.keys())
+        self.firstValue.trace('w',lambda *args:self.refresh(variables))
+        self.firstItem = OptionMenu(self.header,self.firstValue,'',*self.varNames)
+        self.firstItem['font']=fontGroup
+        self.firstItem.grid(row=1,column=1)
+
+        self.operatorChoice = OptionMenu(self.header, self.operator, IfBlock.operators[0] ,*IfBlock.operators)
+        self.operatorChoice['font']=fontGroup
+        self.operatorChoice.grid(row=1,column=2)
+
+        self.secondTypeItem = OptionMenu(self.header,self.secondType,*IfBlock.types)
+        self.secondTypeItem['font']=fontGroup
+        self.secondTypeItem.grid(row=1,column=3)
+
+        self.secondType.trace('w',lambda *args:self.changeType())
+
+        self.secondEntry = tk.Entry(self.header,font=fontGroup,textvariable=self.secondValue,width=10)
+
+        self.secondValue.trace('w',lambda *args:self.refresh(variables))
+        self.secondItem = OptionMenu(self.header,self.secondValue,'',*self.varNames)
+        self.secondItem['font']=fontGroup
+        self.secondItem.grid(row=1,column=4)
+
+        self.nextNode: Node = []
+        self.lastNode: Node = []
+        self.connector = []
+
+    def refresh(self, variables:Dict):
+        self.varNames = list(variables.keys())
+        self.firstItem['menu'].delete(0, 'end')
+        self.secondItem['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.firstItem['menu'].add_command(label=name, command=tk._setit(self.firstValue, name))
+            self.secondItem['menu'].add_command(label=name, command=tk._setit(self.secondValue, name))
+
+    def changeType(self):
+        match self.secondType.get():
+            case 'int' | 'string' | 'double':
+                self.secondValue.set('')
+                self.secondItem.grid_forget()
+                self.secondEntry.grid(row=1,column=4)
+            case 'variable':
+                self.secondValue.set('')
+                self.secondEntry.grid_forget()
+                self.secondItem.grid(row=1,column=4)
+
+    def placeNode(self,canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.pack_propagate(False)
+        self.widget.place(x=0, y=0)
+        self.header.pack()
+        self.header.place(in_=self.background,anchor="c",relx=.5,rely=.5)
+        self.background.pack()
+        self.background.pack_propagate(False)
+        self.background.place(in_=self.widget,anchor="c",relx=.5,rely=.5)
+        #self.workspace.pack(side="top", anchor="ne")
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
     

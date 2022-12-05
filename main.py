@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop
+from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop, NewIfBlock
 
 
 class App:
@@ -85,6 +85,8 @@ class App:
                 App.nodes.append(ForLoop(App.canvas,App.createNode, App.variables))
             case Node.WHILELOOP:
                 App.nodes.append(WhileLoop(App.canvas,App.createNode,App.variables))
+            case Node.NEWIFBLOCK:
+                App.nodes.append(NewIfBlock(App.canvas,App.variables))
             
         App.nodes[-1].placeNode(App.canvas)
         App.make_draggable(App.nodes[-1])
@@ -123,6 +125,7 @@ class App:
         App.nodes.remove(App.rootNode)
         App.rootNode.destroy()
         App.rootNode.deleteConnectors(App.canvas)
+        App.canvas.delete(App.rootNode.window)
 
     def make_draggable(node: Node):
         node.widget.bind("<Button-1>", App.on_drag_start)
