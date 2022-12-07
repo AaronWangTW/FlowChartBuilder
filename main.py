@@ -21,7 +21,7 @@ class App:
     waitFlag = tk.IntVar()
 
     nodes = []
-    variables = {}
+    variables = {'test':1}
 
     cancel = False
 
@@ -86,7 +86,7 @@ class App:
             case Node.WHILELOOP:
                 App.nodes.append(WhileLoop(App.canvas,App.createNode,App.variables))
             case Node.NEWIFBLOCK:
-                App.nodes.append(NewIfBlock(App.canvas,App.variables))
+                App.nodes.append(NewIfBlock(App.canvas,App.createNode,App.variables))
             
         App.nodes[-1].placeNode(App.canvas)
         App.make_draggable(App.nodes[-1])

@@ -14,7 +14,7 @@ class Node:
 
     types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP, NEWIFBLOCK]
 
-    sizes = {SETVARIABLE:125,IFBLOCK:100}
+    sizes = {SETVARIABLE:125,IFBLOCK:100, NEWIFBLOCK:300}
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
@@ -200,7 +200,7 @@ class SetVariable(Node):
 class IfBlock(Node):
 
     operators = ['>','<','==','!=','>=','<=']
-    types = ['int','string','double','variable']
+    types = ['int','string','double','var']
 
     def __init__(self, window, variables:Dict) -> None:
         self.blockType = Node.IFBLOCK
@@ -297,10 +297,15 @@ class IfBlock(Node):
 class NewIfBlock(Node):
     
     operators = ['>','<','==','!=','>=','<=']
-    types = ['int','string','double','variable']
+    types = ['int','string','double','var']
 
-    def __init__(self, window, variables:Dict) -> None:
-        self.blockType = Node.IFBLOCK
+    def __init__(self, window, choice, variables:Dict) -> None:
+        fontGroup = font.Font(size=13,family="Arial")
+        
+        self.blockType = Node.NEWIFBLOCK
+        self.parent = None
+        self.layer = 0
+        self.snap_distance = 5
 
         self.firstValue = StringVar()
         self.firstValue.set('')
@@ -312,43 +317,55 @@ class NewIfBlock(Node):
         self.size = 200
 
         self.widget = tk.Frame(
-            window, bg="#e6e6e6", height=self.size, width=400+self.size*0.5)
+            window, bg="#e6e6e6", height=450+self.size*0.5, width=self.size+350)
 
-        self.workspace = tk.Canvas(self.widget,bg="#FFF", height=self.size-100, width=350)
+        self.background = tk.Canvas(self.widget,background="white",height=400+self.size*0.5,width=self.size+350)
 
-        self.background = tk.Canvas(self.widget,background="white",height=160,width=280)
+        self.trueWorkspace = tk.Canvas(self.background,bg="#FFF", height=self.size, width=self.size, border=3)
+        self.falseWorkspace = tk.Canvas(self.background,bg="#FFF", height=self.size, width=self.size, border=3)
 
         self.header = tk.Frame(self.background,height=5,width=40,bg="white")
+        
 
         rhombusPoints = [
-            5,self.background.winfo_reqheight()/2,
-            self.background.winfo_reqwidth()/2,self.background.winfo_reqheight()-5,
-            self.background.winfo_reqwidth()-5,self.background.winfo_reqheight()/2,
-            self.background.winfo_reqwidth()/2,5
+            5,200/2,
+            350/2,200-5,
+            350-5,200/2,
+            350/2,5
         ]
         self.shape = self.background.create_polygon(rhombusPoints,outline="black",fill="white",width=2)
 
-        fontGroup = font.Font(size=13,family="Arial")
+        self.trueArrow = self.background.create_line(350/2,200-5,350/2,250,arrow=tk.LAST,width=3)
+        self.trueLabel = tk.Label(self.background,text="True",font=fontGroup,background="white")
+        self.trueLabelW = self.background.create_window(350/2-30,220,window=self.trueLabel,anchor="c")
 
-        # self.titleLabel = tk.Label(self.widget, text="If Block",font=fontGroup, background="#c7c7c7", width=self.widget.winfo_screenwidth())
-        # self.titleLabel.pack()
+        self.falseArrow1 = self.background.create_line(350-5,200/2,420,200/2,width=3)
+        self.falseArrow2 = self.background.create_line(420,200/2,420,180,arrow=tk.LAST,width=3)
+        self.falseLabel = tk.Label(self.background,text="False",font=fontGroup,background="white")
+        self.falseLabelW = self.background.create_window(380,80,window=self.falseLabel,anchor="c")
 
-        self.ifLabel = tk.Label(self.header, text="If", font=fontGroup)
-        self.ifLabel.grid(row=1, column=0)
+        self.trueAddButton = tk.Button(self.background, text="+",command=self.addTrueNode, height=1,width=4)
+        self.trueAddButton.place(x=65,y=225)
+
+        self.falseAddButton = tk.Button(self.background, text="+",command=self.addFalseNode, height=1,width=4)
+        self.falseAddButton.place(x=300, y = 155)
+
+        self.ifLabel = tk.Label(self.header, text="If", font=fontGroup, background="white")
+        self.ifLabel.grid(row=1, column=0, columnspan=4)
 
         self.varNames = list(variables.keys())
         self.firstValue.trace('w',lambda *args:self.refresh(variables))
         self.firstItem = OptionMenu(self.header,self.firstValue,'',*self.varNames)
         self.firstItem['font']=fontGroup
-        self.firstItem.grid(row=1,column=1)
+        self.firstItem.grid(row=2,column=0)
 
         self.operatorChoice = OptionMenu(self.header, self.operator, IfBlock.operators[0] ,*IfBlock.operators)
         self.operatorChoice['font']=fontGroup
-        self.operatorChoice.grid(row=1,column=2)
+        self.operatorChoice.grid(row=2,column=1)
 
         self.secondTypeItem = OptionMenu(self.header,self.secondType,*IfBlock.types)
         self.secondTypeItem['font']=fontGroup
-        self.secondTypeItem.grid(row=1,column=3)
+        self.secondTypeItem.grid(row=2,column=2)
 
         self.secondType.trace('w',lambda *args:self.changeType())
 
@@ -357,7 +374,13 @@ class NewIfBlock(Node):
         self.secondValue.trace('w',lambda *args:self.refresh(variables))
         self.secondItem = OptionMenu(self.header,self.secondValue,'',*self.varNames)
         self.secondItem['font']=fontGroup
-        self.secondItem.grid(row=1,column=4)
+        self.secondItem.grid(row=2,column=3)
+
+        self.trueNodes = []
+        self.falseNodes = []
+        
+        self.varDict = variables
+        self.choice = choice
 
         self.nextNode: Node = []
         self.lastNode: Node = []
@@ -376,22 +399,179 @@ class NewIfBlock(Node):
             case 'int' | 'string' | 'double':
                 self.secondValue.set('')
                 self.secondItem.grid_forget()
-                self.secondEntry.grid(row=1,column=4)
+                self.secondEntry.grid(row=2,column=3)
             case 'variable':
                 self.secondValue.set('')
                 self.secondEntry.grid_forget()
-                self.secondItem.grid(row=1,column=4)
+                self.secondItem.grid(row=2,column=3)
 
+    def _make_draggable(self,node:Node, branch:bool):
+        if branch:
+            node.widget.bind("<B1-Motion>", self._on_drag_motion_true)
+        else:
+            node.widget.bind("<B1-Motion>", self._on_drag_motion_false)
+        node.widget.bind("<Button-1>", self._on_drag_start)
+        node.widget._node = node
+
+    def _on_drag_motion_true(self,event:tk.Event):
+        y = event.y-event.widget._drag_start_y
+
+        pos = self.trueWorkspace.bbox(event.widget._node.window)
+
+        # if pos[3] + y > self.size-100:
+        #     y = 0
+        # if pos[1] + y < 0:
+        #     y = 0
+
+        nodeIndex = self.trueNodes.index(event.widget._node)
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.trueNodes[i].blockType,0)
+            if size == 0:
+                size=self.trueNodes[i].size
+            currentMagnet += size
+        
+        lastBlockHeight = Node.sizes.get(self.trueNodes[nodeIndex-1].blockType,0)
+        if lastBlockHeight == 0:
+            lastBlockHeight = self.trueNodes[nodeIndex-1].size
+        thisBlockHeight = Node.sizes.get(self.trueNodes[nodeIndex].blockType,0)
+        if thisBlockHeight == 0:
+            thisBlockHeight = self.trueNodes[nodeIndex].size
+        lastMagnet = currentMagnet-lastBlockHeight
+        if nodeIndex == 0:
+            lastMagnet = 0
+        nextMagnet = currentMagnet+thisBlockHeight
+
+        # if abs(lastMagnet-(pos[1] + y)) < self.snap_distance:
+        #     y+=lastMagnet - (pos[1] + y)
+        #     if nodeIndex != 0:
+        #         self.trueWorkspace.move(self.trueNodes[nodeIndex-1].window,0,thisBlockHeight)
+        #         self.trueNodes[nodeIndex-1], self.trueNodes[nodeIndex] = self.trueNodes[nodeIndex], self.trueNodes[nodeIndex-1]
+        # elif abs(nextMagnet-(pos[1] + y)) < self.snap_distance:
+        #     y+=nextMagnet - (pos[1] + y)
+        #     if nodeIndex != len(self.trueNodes)-1:
+        #         self.trueWorkspace.move(self.trueNodes[nodeIndex+1].window,0,-thisBlockHeight)
+        #         self.trueNodes[nodeIndex+1], self.trueNodes[nodeIndex] = self.trueNodes[nodeIndex], self.trueNodes[nodeIndex+1]
+        # elif abs(currentMagnet-(pos[1]+y)) < self.snap_distance:
+        #     y+=currentMagnet-(pos[1]+y)
+
+        self.trueWorkspace.move(event.widget._node.window,0,y)
+
+    def _on_drag_motion_false(self,event:tk.Event):
+        y = event.y-event.widget._drag_start_y
+
+        pos = self.falseWorkspace.bbox(event.widget._node.window)
+
+        if pos[3] + y > self.size-100:
+            y = 0
+        if pos[1] + y < 0:
+            y = 0
+
+        nodeIndex = self.falseNodes.index(event.widget._node)
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.falseNodes[i].blockType,0)
+            if size == 0:
+                size=self.falseNodes[i].size
+            currentMagnet += size
+        
+        lastBlockHeight = Node.sizes.get(self.falseNodes[nodeIndex-1].blockType,0)
+        if lastBlockHeight == 0:
+            lastBlockHeight = self.falseNodes[nodeIndex-1].size
+        thisBlockHeight = Node.sizes.get(self.falseNodes[nodeIndex].blockType,0)
+        if thisBlockHeight == 0:
+            thisBlockHeight = self.falseNodes[nodeIndex].size
+        lastMagnet = currentMagnet-lastBlockHeight
+        if nodeIndex == 0:
+            lastMagnet = 0
+        nextMagnet = currentMagnet+thisBlockHeight
+
+        if abs(lastMagnet-(pos[1] + y)) < self.snap_distance:
+            y+=lastMagnet - (pos[1] + y)
+            if nodeIndex != 0:
+                self.falseWorkspace.move(self.falseNodes[nodeIndex-1].window,0,thisBlockHeight)
+                self.falseNodes[nodeIndex-1], self.falseNodes[nodeIndex] = self.falseNodes[nodeIndex], self.falseNodes[nodeIndex-1]
+        elif abs(nextMagnet-(pos[1] + y)) < self.snap_distance:
+            y+=nextMagnet - (pos[1] + y)
+            if nodeIndex != len(self.falseNodes)-1:
+                self.falseWorkspace.move(self.falseNodes[nodeIndex+1].window,0,-thisBlockHeight)
+                self.falseNodes[nodeIndex+1], self.falseNodes[nodeIndex] = self.falseNodes[nodeIndex], self.falseNodes[nodeIndex+1]
+        elif abs(currentMagnet-(pos[1]+y)) < self.snap_distance:
+            y+=currentMagnet-(pos[1]+y)
+
+        self.falseWorkspace.move(event.widget._node.window,0,y)
+
+    def _on_drag_start(self,event:tk.Event):
+        widget = event.widget
+        widget._drag_start_y = event.y
+
+    def addTrueNode(self):
+        choice = self.choice()
+        match choice.get():
+            case Node.SETVARIABLE:
+                self.trueNodes.append(SetVariable(self.trueWorkspace, self.varDict))
+            case Node.IFBLOCK:
+                self.trueNodes.append(IfBlock(self.trueWorkspace,self.varDict))
+            case Node.FORLOOP:
+                loop = ForLoop(self.trueWorkspace,self.choice,self.varDict)
+                self.trueNodes.append(loop)
+                loop.parent = self
+            case Node.WHILELOOP:
+                self.trueNodes.append(SetVariable(self.trueWorkspace,self.varDict))
+        
+        self.trueNodes[-1].placeNode(self.trueWorkspace)
+        self._make_draggable(self.trueNodes[-1],True)
+        # self.adjustSize()
+        # if self.parent != None:
+        #     self.parent.adjustSize()
+        nodeIndex = len(self.trueNodes)-1
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.trueNodes[i].blockType,0)
+            if size == 0:
+                size=self.trueNodes[i].size
+            currentMagnet += size
+        self.trueWorkspace.move(self.trueNodes[-1].window,0,currentMagnet)
+
+    def addFalseNode(self):
+        choice = self.choice()
+        match choice.get():
+            case Node.SETVARIABLE:
+                self.falseNodes.append(SetVariable(self.falseWorkspace, self.varDict))
+            case Node.IFBLOCK:
+                self.falseNodes.append(IfBlock(self.falseWorkspace,self.varDict))
+            case Node.FORLOOP:
+                loop = ForLoop(self.falseWorkspace,self.choice,self.varDict)
+                self.falseNodes.append(loop)
+                loop.parent = self
+            case Node.WHILELOOP:
+                self.falseNodes.append(SetVariable(self.falseWorkspace,self.varDict))
+        
+        self.falseNodes[-1].placeNode(self.falseWorkspace)
+        self._make_draggable(self.falseNodes[-1],False)
+        # self.adjustSize()
+        # if self.parent != None:
+        #     self.parent.adjustSize()
+        nodeIndex = len(self.falseNodes)-1
+        currentMagnet = 0
+        for i in range(nodeIndex):
+            size=Node.sizes.get(self.falseNodes[i].blockType,0)
+            if size == 0:
+                size=self.falseNodes[i].size
+            currentMagnet += size
+        self.falseWorkspace.move(self.falseNodes[-1].window,0,currentMagnet)
+    
     def placeNode(self,canvas):
         self.widget.pack(expand=True, fill=BOTH)
         self.widget.pack_propagate(False)
         self.widget.place(x=0, y=0)
         self.header.pack()
-        self.header.place(in_=self.background,anchor="c",relx=.5,rely=.5)
+        self.header.place(in_=self.background,anchor="c",x=350/2,y=200/2-10)
         self.background.pack()
         self.background.pack_propagate(False)
         self.background.place(in_=self.widget,anchor="c",relx=.5,rely=.5)
-        #self.workspace.pack(side="top", anchor="ne")
+        self.trueWorkspace.place(x=65, y=250)
+        self.falseWorkspace.place(x=300,y=180)
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
     
