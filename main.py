@@ -194,6 +194,11 @@ class App:
         App.waitFlag.set(0)
         for node in App.nodes:
             node.widget.bind("<ButtonRelease-1>", App.locateRootNode)
+            if (node.blockType == Node.NEWFORLOOP or node.blockType == Node.NEWWHILELOOP):
+                node.loopEndNode.widget.bind("<ButtonRelease-1>", App.locateRootNode)
+            elif (node.blockType == Node.NEWIFBLOCK):
+                node.trueBranchNode.widget.bind("<ButtonRelease-1>", App.locateRootNode)
+                node.falseBranchNode.widget.bind("<ButtonRelease-1>", App.locateRootNode)
         label.pack()
         frame.wait_variable(App.waitFlag)
 
@@ -208,6 +213,11 @@ class App:
         App.waitFlag.set(0)
         for node in App.nodes:
             node.widget.bind("<ButtonRelease-1>", App.locateNextNode)
+            if (node.blockType == Node.NEWFORLOOP or node.blockType == Node.NEWWHILELOOP):
+                node.loopEndNode.widget.bind("<ButtonRelease-1>", App.locateNextNode)
+            elif (node.blockType == Node.NEWIFBLOCK):
+                node.trueBranchNode.widget.bind("<ButtonRelease-1>", App.locateNextNode)
+                node.falseBranchNode.widget.bind("<ButtonRelease-1>", App.locateNextNode)
         frame.wait_variable(App.waitFlag)
 
         # cancel check
@@ -219,6 +229,11 @@ class App:
         label.destroy()
         for node in App.nodes:
             node.widget.bind("<ButtonRelease-1>", None)
+            if (node.blockType == Node.NEWFORLOOP or node.blockType == Node.NEWWHILELOOP):
+                node.loopEndNode.widget.bind("<ButtonRelease-1>", None)
+            elif (node.blockType == Node.NEWIFBLOCK):
+                node.trueBranchNode.widget.bind("<ButtonRelease-1>", None)
+                node.falseBranchNode.widget.bind("<ButtonRelease-1>", None)
         App.canvas.bind("<Button-3>",None)
 
         if App.nextNode == App.rootNode:
