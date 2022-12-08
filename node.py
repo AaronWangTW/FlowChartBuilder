@@ -7,28 +7,27 @@ from typing import Any, Dict, List
 class Node:
 
     SETVARIABLE = "Set Variable"
-    IFBLOCK = "If Statement"
-    FORLOOP = "For Loop"
-    WHILELOOP = "While Loop"
-    NEWIFBLOCK = "New If Block"
+    IFBLOCK = "Old If Statement"
+    FORLOOP = "Old For Loop"
+    WHILELOOP = "Old While Loop"
+    NEWIFBLOCK = "If Statement"
     IFTRUEBLOCK = "If True Branch"
     IFFALSEBLOCK = "If False Branch"
     LOOPENDBLOCK = "Loop End Block"
-    NEWWHILELOOP = "New While Loop"
-    NEWFORLOOP = "New For Loop"
+    NEWWHILELOOP = "While Loop"
+    NEWFORLOOP = "For Loop"
+    CHANGEVARIABLE = "Change Variable"
 
-    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP]
+    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE]
 
     sizes = {SETVARIABLE:125,IFBLOCK:100}
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
-        IFBLOCK: "If statement block that execute correspondingly to the result of the if statment",
-        FORLOOP: "A block that can execute its inside contents in a for loop structure",
-        WHILELOOP: "A block that can execute its inside contents in a while loop structure",
-        NEWIFBLOCK: "draft of new if block",
-        NEWWHILELOOP: "draft of new while loop",
-        NEWFORLOOP: "draft of new for loop"
+        NEWIFBLOCK: "If statement block that execute correspondingly to the result of the if statment",
+        NEWWHILELOOP: "A block that can execute its inside contents in a while loop structure",
+        NEWFORLOOP: "A block that can execute its inside contents in a for loop structure",
+        CHANGEVARIABLE: "Change the value of an existing variable"
     }
 
     def __init__(self) -> None:
@@ -184,6 +183,115 @@ class SetVariable(Node):
                     else:
                         varDict[name] = None
         self.lastVarName = self.varName.get()
+
+    def destroy(self):
+        self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
+
+class ChangeVariable(Node):
+
+    types = ['input','var']
+    operators = ['=','+=','-=','/=','//=','%=','*=']
+    
+    def __init__(self, window, varDict) -> None:
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=100, width=300)
+
+        self.blockType = Node.CHANGEVARIABLE
+        
+        self.firstVar = StringVar()
+        self.typeChoice = StringVar()
+        self.typeChoice.set(ChangeVariable.types[0])
+        self.operator = StringVar()
+        self.value = StringVar()
+        
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="Change Variable",font=fontGroup, background="#c7c7c7", width=50)
+        self.titleLabel.grid(row=0, column=0, columnspan=4)
+
+        self.varNames = list(varDict.keys())
+        self.firstVar.trace('w',lambda *args:self.refresh(varDict))
+        self.firstVarChoice = OptionMenu(self.widget,self.firstVar,'',*self.varNames)
+        self.firstVarChoice['font']=fontGroup
+        self.firstVarChoice.grid(row=1,column=0)
+
+        self.operatorChoice = OptionMenu(self.widget, self.operator, ChangeVariable.operators[0] ,*ChangeVariable.operators)
+        self.operatorChoice['font']=fontGroup
+        self.operatorChoice.grid(row=1,column=1)
+
+        self.typeDrop = OptionMenu(self.widget, self.typeChoice, *ChangeVariable.types)
+        self.typeDrop['font']=fontGroup
+        self.typeDrop.grid(row=1,column=2)
+
+        self.typeChoice.trace('w',lambda *args:self.changeType())
+
+        self.valueEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.value,width=10)
+        self.valueEntry.grid(row=1,column=3)
+
+        self.value.trace('w',lambda *args:self.refresh(varDict))
+        self.valueDrop = OptionMenu(self.widget,self.value,'',*self.varNames)
+        self.valueDrop['font']=fontGroup
+        
+        self.nextNode: Node = []
+        self.lastNode: Node = []
+        self.connector = []
+    
+    def changeType(self):
+        match self.typeChoice.get():
+            case 'input':
+                self.value.set('')
+                self.valueDrop.grid_forget()
+                self.valueEntry.grid(row=1,column=3)
+            case 'var':
+                self.value.set('')
+                self.valueEntry.grid_forget()
+                self.valueDrop.grid(row=1,column=3)
+
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_columnconfigure(1,weight=1)
+        self.widget.grid_columnconfigure(2,weight=1)
+        self.widget.grid_columnconfigure(3,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+        self.widget.grid_rowconfigure(1,weight=7)
+        self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
+
+    def setVarName(self, varName: str):
+        self.varName = varName
+    
+    def refresh(self, variables:Dict):
+        self.varNames = list(variables.keys())
+        self.firstVarChoice['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.firstVarChoice['menu'].add_command(label=name, command=tk._setit(self.firstVar, name))
+
+    def output(self, varDict: Dict):
+        pass
 
     def destroy(self):
         self.widget.destroy()
