@@ -17,17 +17,19 @@ class Node:
     NEWWHILELOOP = "While Loop"
     NEWFORLOOP = "For Loop"
     CHANGEVARIABLE = "Change Variable"
+    STARTBLOCK = "Start Block"
+    ENDBLOCK = "End Block"
 
-    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE]
-
-    sizes = {SETVARIABLE:125,IFBLOCK:100}
+    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE, STARTBLOCK, ENDBLOCK]
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
         NEWIFBLOCK: "If statement block that execute correspondingly to the result of the if statment",
         NEWWHILELOOP: "A block that can execute its inside contents in a while loop structure",
         NEWFORLOOP: "A block that can execute its inside contents in a for loop structure",
-        CHANGEVARIABLE: "Change the value of an existing variable"
+        CHANGEVARIABLE: "Change the value of an existing variable",
+        STARTBLOCK: "The starting point of the flowchart",
+        ENDBLOCK: "The stopping point of the flowchart"
     }
 
     def __init__(self) -> None:
@@ -1267,6 +1269,118 @@ class TextNode(Node):
         self.widget.place(x=0, y=0)
 
         self.window=canvas.create_window(xpos,ypos,window=self.widget, anchor="nw")
+
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
+
+    def output(self):
+        pass
+
+    def destroy(self):
+        self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
+
+class InputBlock(Node):
+    pass
+
+class OutputBlock(Node):
+    pass
+
+class StartBlock(Node):
+    
+    def __init__(self, window) -> None:
+        self.widget = tk.Frame(
+            window, bg="#83c282", height=50, width=100)
+
+        self.blockType = Node.STARTBLOCK
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="Start",font=fontGroup, background="#83c282", width=10)
+        self.titleLabel.grid(row=0,column=0)
+
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+        
+        self.nextNode: Node = []
+        self.connector = []
+
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
+
+    def output(self):
+        pass
+
+    def destroy(self):
+        self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
+
+class EndBlock(Node):
+    
+    def __init__(self, window) -> None:
+        self.widget = tk.Frame(
+            window, bg="#c46e71", height=50, width=100)
+
+        self.blockType = Node.ENDBLOCK
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="End",font=fontGroup, background="#c46e71", width=10)
+        self.titleLabel.grid(row=0,column=0)
+
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+        
+        self.lastNode: List[Node] = []
+        self.connector = []
+
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
     def activate(self, time: int):
         self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
