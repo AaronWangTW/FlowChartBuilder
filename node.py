@@ -14,8 +14,9 @@ class Node:
     IFTRUEBLOCK = "If True Branch"
     IFFALSEBLOCK = "If False Branch"
     LOOPENDBLOCK = "Loop End Block"
+    NEWWHILELOOP = "New While Loop"
 
-    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP, NEWIFBLOCK, IFTRUEBLOCK, IFFALSEBLOCK, LOOPENDBLOCK]
+    types = [SETVARIABLE, IFBLOCK, FORLOOP, WHILELOOP, NEWIFBLOCK, NEWWHILELOOP]
 
     sizes = {SETVARIABLE:125,IFBLOCK:100}
 
@@ -25,8 +26,7 @@ class Node:
         FORLOOP: "A block that can execute its inside contents in a for loop structure",
         WHILELOOP: "A block that can execute its inside contents in a while loop structure",
         NEWIFBLOCK: "draft of new if block",
-
-        IFTRUEBLOCK:"", IFFALSEBLOCK:"", LOOPENDBLOCK:""
+        NEWWHILELOOP: "draft of new while loop"
     }
 
     def __init__(self) -> None:
@@ -360,11 +360,14 @@ class NewIfBlock(Node):
         self.trueBranchNode = TextNode(window,Node.IFTRUEBLOCK)
         self.falseBranchNode = TextNode(window,Node.IFFALSEBLOCK)
 
+        self.trueBranchNode.lastNode.append(self)
+        self.falseBranchNode.lastNode.append(self)
+
         self.placeChild = placeChild
         
         self.varDict = variables
 
-        self.nextNode: Node = []
+        self.nextNode: Node = [self.trueBranchNode,self.falseBranchNode]
         self.lastNode: Node = []
         self.connector = []
 
@@ -401,6 +404,7 @@ class NewIfBlock(Node):
         self.placeChild(self.falseBranchNode, 300,280)
 
         self.window=canvas.create_window(50,0,window=self.widget, anchor="nw")
+        self.connect(canvas)
     
     def activate():
         pass
@@ -814,6 +818,165 @@ class WhileLoop(Node):
         self.widget.configure(height=self.size,width=400+self.layer*50)
         self.workspace.configure(height=self.size-100,width=350+self.layer*50)
 
+class NewWhileLoop(Node):
+    
+    operators = ['>','<','>=','<=']
+
+    def __init__(self, window, varDict:Dict,placeChild) -> None:
+        super().__init__()
+        self.blockType = Node.NEWWHILELOOP
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=250, width=300)
+
+        self.background = tk.Canvas(self.widget,background="white",height=200,width=300)
+
+        self.header = tk.Frame(self.widget,height=50,width=300,bg="white")
+        
+        rhombusPoints = [
+            5,self.background.winfo_reqheight()/2,
+            self.background.winfo_reqwidth()/2,self.background.winfo_reqheight()-5,
+            self.background.winfo_reqwidth()-5,self.background.winfo_reqheight()/2,
+            self.background.winfo_reqwidth()/2,5
+        ]
+        self.shape = self.background.create_polygon(rhombusPoints,outline="black",fill="white",width=2)
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.whileLabel = tk.Label(self.header,text="while",font=fontGroup,bg="white")
+        self.whileLabel.pack(side="left",padx=5)
+
+        self.var = StringVar()
+
+        self.varChoice = OptionMenu(self.header, self.var, *varDict)
+        self.varChoice['font']=fontGroup
+        self.varChoice.pack(side="left")
+
+        self.operator = StringVar()
+
+        self.operatorChoice = OptionMenu(self.header, self.operator, *ForLoop.operators)
+        self.operatorChoice['font']=fontGroup
+        self.operatorChoice.pack(side="left")
+
+        self.targetType = StringVar()
+
+        self.targetTypeChoice = OptionMenu(self.header,self.targetType,*IfBlock.types)
+        self.targetTypeChoice['font']=fontGroup
+        self.targetTypeChoice.pack(side="left")
+
+        self.targetType.trace('w',lambda *args:self.changeType())
+
+        self.targetValue = StringVar()
+
+        self.targetEntry = tk.Entry(self.header,font=fontGroup,textvariable=self.targetValue,width=10)
+        self.varNames = varDict.keys()
+
+        self.targetValue.trace('w',lambda *args:self.refresh(varDict))
+        self.targetChoice = OptionMenu(self.header,self.targetValue,*self.varNames)
+        self.targetChoice['font']=fontGroup
+        self.targetChoice.pack(side="left")
+
+        self.loopEndNode = TextNode(window,Node.LOOPENDBLOCK)
+
+        self.loopEndNode.lastNode.append(self)
+
+        self.placeChild = placeChild
+
+        self.varDict = varDict
+
+        self.nextNode: Node = [self.loopEndNode]
+        self.lastNode: Node = []
+        self.connector = []
+    
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+        self.widget.grid_rowconfigure(0,weight=1)
+        self.widget.grid_columnconfigure(0,weight=1)
+
+        self.header.grid(row=0,column=0)
+        self.background.pack()
+        self.background.pack_propagate(False)
+        self.background.place(in_=self.widget,anchor="c",relx=.5,rely=.5)
+
+        self.placeChild(self.loopEndNode, 100, 300)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+        self.connect(canvas)
+
+    def changeType(self):
+        match self.targetType.get():
+            case 'int' | 'string' | 'double':
+                self.targetValue.set('')
+                self.targetChoice.pack_forget()
+                self.targetEntry.pack(side="left")
+            case 'variable':
+                self.targetValue.set('')
+                self.targetEntry.pack_forget()
+                self.targetChoice.pack(side="left")
+
+    def refresh(self,varDict:Dict):
+        self.varNames = list(varDict.keys())
+        self.targetChoice['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.targetChoice['menu'].add_command(label=name, command=tk._setit(self.targetValue, name))
+
+    def connect(self, canva: tk.Canvas):
+        if len(self.nextNode) > 0:
+            try:
+                for line in self.connector:
+                    canva.delete(line[1])
+                self.connector = []
+            except:
+                print("no existing line")
+
+            pos = canva.bbox(self.window)
+            ax0 = pos[0]
+            ay0 = pos[1]
+            ax1 = pos[2]
+            ay1 = pos[3]
+
+            x0 = (ax0 + ax1) / 2
+            y0 = (ay0 + ay1) / 2
+
+            for node in self.nextNode:
+                pos = canva.bbox(node.window)
+                bx0 = pos[0]
+                by0 = pos[1]
+                bx1 = pos[2]
+                by1 = pos[3]
+
+                x1 = (bx0 + bx1) / 2
+                y1 = (by0 + by1) / 2
+
+                if node.blockType == Node.LOOPENDBLOCK:
+                    startConnnector = canva.create_line(
+                        x0,y0,x0+200,y0,fill="black",width=4, tags=("loopEndConnector"))
+                    midConnector = canva.create_line(
+                        x0+200,y0,x0+200,y1,fill="black",width=4,tags=("loopEndConnector"))
+                    endConnector = canva.create_line(
+                        x0+200,y1,x1,y1,fill="black",width=4,tags=("loopEndConnector"))
+                    canva.tag_lower(startConnnector)
+                    canva.tag_lower(midConnector)
+                    canva.tag_lower(endConnector)
+                    self.connector.append((node,startConnnector))
+                    self.connector.append((node,midConnector))
+                    self.connector.append((node,endConnector))
+                else:
+                    line_id = canva.create_line(
+                        x0, y0, x1, y1, fill="black", width=4, tags=())
+                    canva.tag_lower(line_id)
+                    self.connector.append((node, line_id))
+        if len(self.lastNode) > 0:
+            for node in self.lastNode:
+                node.connect(canva)
+
+    def destroy(self):
+        super().destroy()
+        self.loopEndNode.destroy()
+
+          
 class TextNode(Node):
 
     textDict = {Node.IFTRUEBLOCK:"True", Node.IFFALSEBLOCK:"False", Node.LOOPENDBLOCK:"End Loop"}
