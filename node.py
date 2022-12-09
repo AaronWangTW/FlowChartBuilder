@@ -162,10 +162,12 @@ class SetVariable(Node):
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
-    def activate(self, time: int):
-        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+    def activate(self):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
-            time+500, lambda: self.widget.config(background='#e6e6e6'))
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        for node in self.nextNode:
+            node.activate()
 
     def setVarName(self, varName: str):
         self.varName = varName
@@ -189,6 +191,8 @@ class SetVariable(Node):
                     else:
                         varDict[name] = None
         self.lastVarName = self.varName.get()
+        for node in self.nextNode:
+            node.output()
 
     def destroy(self):
         self.widget.destroy()
@@ -286,6 +290,8 @@ class ChangeVariable(Node):
         self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             time+500, lambda: self.widget.config(background='#e6e6e6'))
+        for node in self.nextNode:
+            node.activate()
 
     def setVarName(self, varName: str):
         self.varName = varName
@@ -297,7 +303,47 @@ class ChangeVariable(Node):
             self.firstVarChoice['menu'].add_command(label=name, command=tk._setit(self.firstVar, name))
 
     def output(self, varDict: Dict):
-        pass
+        if self.firstVar.get() != "":
+            name = self.firstVar.get()
+            value = self.value.get()
+            match self.operator.get():
+                case '=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] = value
+                    else:
+                        varDict[name] = varDict[value]
+                case '+=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] += value
+                    else:
+                        varDict[name] += varDict[value]
+                case '-=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] -= value
+                    else:
+                        varDict[name] -= varDict[value]
+                case '/=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] /= value
+                    else:
+                        varDict[name] /= varDict[value]
+                case '//=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] //= value
+                    else:
+                        varDict[name] //= varDict[value]
+                case '%=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] %= value
+                    else:
+                        varDict[name] %= varDict[value]
+                case '*=':
+                    if self.typeChoice.get() == 'input':
+                        varDict[name] *= value
+                    else:
+                        varDict[name] *= varDict[value]
+        for node in self.nextNode:
+            node.output()
 
     def destroy(self):
         self.widget.destroy()
@@ -522,16 +568,97 @@ class NewIfBlock(Node):
         self.window=canvas.create_window(50,0,window=self.widget, anchor="nw")
         self.connect(canvas)
     
-    def activate():
-        pass
+    def evaluate(self,varDict:Dict):
+        result = None
+
+        varName = self.firstValue.get()
+        value = self.secondValue.get()
+
+        match self.operator.get():
+            case '>':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] > int(value)
+                    case'string':
+                        result = varDict[varName] > value
+                    case 'double':
+                        result = varDict[varName] > float(value)
+                    case 'var':
+                        result = varDict[varName] > varDict[value]
+            case '<':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] < int(value)
+                    case'string':
+                        result = varDict[varName] < value
+                    case 'double':
+                        result = varDict[varName] < float(value)
+                    case 'var':
+                        result = varDict[varName] < varDict[value]
+            case '==':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] == int(value)
+                    case'string':
+                        result = varDict[varName] == value
+                    case 'double':
+                        result = varDict[varName] == float(value)
+                    case 'var':
+                        result = varDict[varName] == varDict[value]
+            case '!=':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] != int(value)
+                    case'string':
+                        result = varDict[varName] != value
+                    case 'double':
+                        result = varDict[varName] != float(value)
+                    case 'var':
+                        result = varDict[varName] != varDict[value]
+            case '>=':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] >= int(value)
+                    case'string':
+                        result = varDict[varName] >= value
+                    case 'double':
+                        result = varDict[varName] >= float(value)
+                    case 'var':
+                        result = varDict[varName] >= varDict[value]
+            case '<=':
+                match self.secondType.get():
+                    case 'int':
+                        result = varDict[varName] <= int(value)
+                    case'string':
+                        result = varDict[varName] <= value
+                    case 'double':
+                        result = varDict[varName] <= float(value)
+                    case 'var':
+                        result = varDict[varName] <= varDict[value]
+
+        return result
+
+    def activate(self, varDict:Dict):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        result = self.evaluate(varDict)
+        if result:
+            self.trueBranchNode.activate()
+        else:
+            self.falseBranchNode.activate()
 
     def destroy(self):
         super().destroy()
         self.trueBranchNode.destroy()
         self.falseBranchNode.destroy()
 
-    def output():
-        pass
+    def output(self,varDict:Dict):
+        result = self.evaluate(varDict)
+        if result:
+            self.trueBranchNode.output()
+        else:
+            self.falseBranchNode.output()
 
 class ForLoop(Node):
 

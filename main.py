@@ -20,7 +20,7 @@ class App:
     nextNode: Node = None
     waitFlag = tk.IntVar()
 
-    nodes = []
+    nodes: List[Node] = []
     variables = {'test':1}
 
     cancel = False
@@ -336,19 +336,11 @@ class App:
 
     def run(delay: int):
         print("run")
-        nodes: List[Node] = [App.nodes[0]]
-        nextNodes: List[Node] = []
-        d = delay
-        while (len(nodes) > 0):
-            for node in nodes:
-                node.activate(d)
-            nextNodes = []
-            for node in nodes:
-                for nextNode in node.nextNode:
-                    if nextNode not in nextNodes:
-                        nextNodes.append(nextNode)
-            nodes = nextNodes.copy()
-            d = d+delay
+        for node in App.nodes:
+            if node.blockType == Node.STARTBLOCK:
+                startNode = node
+        startNode.activate()
+        startNode.output()
 
     def about():
         messagebox.showinfo('About', 'What do you expect of a test program?')
