@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop, NewIfBlock, NewWhileLoop, NewForLoop, ChangeVariable, StartBlock, EndBlock
+from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop, NewIfBlock, NewWhileLoop, NewForLoop, ChangeVariable, StartBlock, EndBlock, InputBlock, OutputBlock
 
 
 class App:
@@ -113,6 +113,10 @@ class App:
                                    "There cannot be more than one end block in one flowchart")
                     return
                 App.nodes.append(EndBlock(App.canvas))
+            case Node.INPUTBLOCK:
+                App.nodes.append(InputBlock(App.canvas,App.variables))
+            case Node.OUTPUTBLOCK:
+                App.nodes.append(OutputBlock(App.canvas,App.variables))
             
         App.nodes[-1].placeNode(App.canvas)
         App.make_draggable(App.nodes[-1])

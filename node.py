@@ -19,8 +19,10 @@ class Node:
     CHANGEVARIABLE = "Change Variable"
     STARTBLOCK = "Start Block"
     ENDBLOCK = "End Block"
+    INPUTBLOCK = "Input Block"
+    OUTPUTBLOCK = "Output Block"
 
-    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE, STARTBLOCK, ENDBLOCK]
+    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE, STARTBLOCK, ENDBLOCK, INPUTBLOCK, OUTPUTBLOCK]
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
@@ -29,7 +31,9 @@ class Node:
         NEWFORLOOP: "A block that can execute its inside contents in a for loop structure",
         CHANGEVARIABLE: "Change the value of an existing variable",
         STARTBLOCK: "The starting point of the flowchart",
-        ENDBLOCK: "The stopping point of the flowchart"
+        ENDBLOCK: "The stopping point of the flowchart",
+        INPUTBLOCK: "Getting external input from flowchart console",
+        OUTPUTBLOCK: "Outputting values to the flowchart console"
     }
 
     def __init__(self) -> None:
@@ -147,8 +151,8 @@ class SetVariable(Node):
         self.valueEntry = tk.Entry(self.widget,font=fontGroup,textvariable=self.value,width=10)
         self.valueEntry.grid(row=3,column=1,columnspan=2,pady=5,padx=(5,20))
         
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
 
     def placeNode(self, canvas):
@@ -250,8 +254,8 @@ class ChangeVariable(Node):
         self.valueDrop = OptionMenu(self.widget,self.value,'',*self.varNames)
         self.valueDrop['font']=fontGroup
         
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
     
     def changeType(self):
@@ -370,8 +374,8 @@ class IfBlock(Node):
         self.secondItem['font']=fontGroup
         self.secondItem.grid(row=1,column=4)
 
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
 
     def refresh(self, variables:Dict):
@@ -479,8 +483,8 @@ class NewIfBlock(Node):
         
         self.varDict = variables
 
-        self.nextNode: Node = [self.trueBranchNode,self.falseBranchNode]
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = [self.trueBranchNode,self.falseBranchNode]
+        self.lastNode: List[Node] = []
         self.connector = []
 
     def refresh(self, variables:Dict):
@@ -610,8 +614,8 @@ class ForLoop(Node):
         self.choice = choice
         self.varDict = varDict
 
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
     
     def placeNode(self, canvas):
@@ -794,8 +798,8 @@ class WhileLoop(Node):
         self.choice = choice
         self.varDict = varDict
 
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
     
     def placeNode(self, canvas):
@@ -996,8 +1000,8 @@ class NewWhileLoop(Node):
 
         self.varDict = varDict
 
-        self.nextNode: Node = [self.loopEndNode]
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = [self.loopEndNode]
+        self.lastNode: List[Node] = []
         self.connector = []
     
     def placeNode(self, canvas):
@@ -1170,8 +1174,8 @@ class NewForLoop(Node):
 
         self.varDict = varDict
 
-        self.nextNode: Node = [self.loopEndNode]
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = [self.loopEndNode]
+        self.lastNode: List[Node] = []
         self.connector = []
     
     def placeNode(self, canvas):
@@ -1259,8 +1263,8 @@ class TextNode(Node):
         self.widget.grid_columnconfigure(0,weight=1)
         self.widget.grid_rowconfigure(0,weight=1)
         
-        self.nextNode: Node = []
-        self.lastNode: Node = []
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
         self.connector = []
 
     def placeNode(self, canvas, xpos, ypos):
@@ -1298,10 +1302,207 @@ class TextNode(Node):
             print("no such line or node")
 
 class InputBlock(Node):
-    pass
+    
+    def __init__(self, window, variables:Dict) -> None:
+        self.inputCount = 1
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=75, width=150+self.inputCount*50)
+
+        self.blockType = Node.INPUTBLOCK
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="Input",font=fontGroup, background="#e6e6e6", width=4)
+        self.titleLabel.grid(row=0,column=0)
+
+        initVar = StringVar()
+        self.inputVars: List[tk.StringVar] = [initVar]
+
+        initEntry = tk.Entry(self.widget,textvariable=initVar,borderwidth=0,width=6)
+        self.inputEntries: List[tk.Entry] = [initEntry]
+        initEntry.grid(row=0,column=1) 
+
+        self.addButton = tk.Button(self.widget,text="+", command=self.addInput)
+        self.addButton.grid(row=0,column=2)
+
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_columnconfigure(1,weight=1)
+        self.widget.grid_columnconfigure(2,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+
+        self.variables = variables
+        
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
+        self.connector = []
+
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def addInput(self):
+        self.inputVars.append(StringVar())
+        self.inputCount+=1
+        self.inputEntries.append(tk.Entry(self.widget,textvariable=self.inputVars[self.inputCount-1],borderwidth=0,width=6))
+        self.inputEntries[self.inputCount-1].grid(row=0,column=self.inputCount)
+        self.addButton.grid(row=0,column=self.inputCount+1)
+        self.widget.grid_columnconfigure(self.inputCount+1,weight=1)
+        self.widget.config(width=150+self.inputCount*50)
+
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
+
+    def output(self):
+        pass
+
+    def destroy(self):
+        self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
 
 class OutputBlock(Node):
-    pass
+
+    types = ['var','string']
+    
+    def __init__(self, window, variables:Dict) -> None:
+        self.outputCount = 1
+
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=75, width=150+self.outputCount*60)
+
+        self.blockType = Node.OUTPUTBLOCK
+
+        self.fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="Output",font=self.fontGroup, background="#e6e6e6", width=5)
+        self.titleLabel.grid(row=0,column=0)
+
+        self.initOutput = StringVar()
+        self.outputs: List[tk.StringVar] = [self.initOutput]
+
+        self.outputType = StringVar()
+        self.outputTypeDrop = OptionMenu(self.widget,self.outputType,*OutputBlock.types)
+        self.outputTypeDrop['font']=self.fontGroup
+        self.outputTypeDrop.grid(row=0,column=1)
+
+        self.outputType.trace('w',lambda *args:self.changeType())
+
+        self.outputEntry = tk.Entry(self.widget,textvariable=self.initOutput,borderwidth=0,width=6)
+
+        self.varNames = list(variables.keys())
+        self.initOutput.trace('w',lambda *args:self.refresh(variables))
+        self.outputVar = OptionMenu(self.widget,self.initOutput,'',*self.varNames)
+        self.outputVar['font']=self.fontGroup
+        self.outputVar.grid(row=0,column=2)
+
+        self.outputVars = [self.outputVar]
+
+        self.addButton = tk.Button(self.widget,text="+", command=self.addInput)
+        self.addButton.grid(row=0,column=3)
+
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_columnconfigure(1,weight=1)
+        self.widget.grid_columnconfigure(2,weight=1)
+        self.widget.grid_columnconfigure(3,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+
+        self.variables = variables
+        
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
+        self.connector = []
+
+    def placeNode(self, canvas):
+        self.widget.pack(expand=True, fill=BOTH)
+        self.widget.grid_propagate(False)
+        self.widget.place(x=0, y=0)
+
+        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+
+    def addInput(self):
+        self.outputs.append(StringVar())
+        self.outputCount+=1
+        outputVar = OptionMenu(self.widget,self.outputs[-1],'',*self.varNames)
+        outputVar['font']=self.fontGroup
+        self.outputVars.append(outputVar)
+        self.outputVars[self.outputCount-1].grid(row=0,column=self.outputCount+1)
+        self.addButton.grid(row=0,column=self.outputCount+2)
+        self.widget.grid_columnconfigure(self.outputCount+2,weight=1)
+
+        self.widget.config(width=150+self.outputCount*60)
+
+    def changeType(self):
+        match self.outputType.get():
+            case 'var':
+                for output in self.outputs:
+                    output.set('')
+                self.outputEntry.grid_forget()
+                self.outputCount = 1
+                self.outputVar.grid(row=0,column=2)
+                self.addButton.grid(row=0,column=3)
+                self.widget.config(width=150+self.outputCount*60)
+            case 'string':
+                self.outputCount=1
+                for output in self.outputs:
+                    output.set('')
+                for var in self.outputVars:
+                    var.grid_forget()
+                self.outputEntry.grid(row=0,column=2)
+                self.addButton.grid_forget()
+                self.widget.config(width=150+self.outputCount*60)
+
+    def refresh(self, variables:Dict):
+        self.varNames = list(variables.keys())
+        self.outputVar['menu'].delete(0, 'end')
+        for name in self.varNames:
+            self.outputVar['menu'].add_command(label=name, command=tk._setit(self.outputs[0], name))
+
+    def activate(self, time: int):
+        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            time+500, lambda: self.widget.config(background='#e6e6e6'))
+
+    def output(self):
+        pass
+
+    def destroy(self):
+        self.widget.destroy()
+
+    def deleteConnectors(self, canvas: tk.Canvas):
+        try:
+            for line in self.connector:
+                canvas.delete(line[1])
+            self.connector = []
+        except:
+            print("no existing line")
+
+    def removeConnector(self,canvas:tk.Canvas,node):
+        try:
+            for line in self.connector:
+                if line[0] == node:
+                    canvas.delete(line[1])
+        except:
+            print("no such line or node")
 
 class StartBlock(Node):
     
@@ -1319,7 +1520,7 @@ class StartBlock(Node):
         self.widget.grid_columnconfigure(0,weight=1)
         self.widget.grid_rowconfigure(0,weight=1)
         
-        self.nextNode: Node = []
+        self.nextNode: List[Node] = []
         self.connector = []
 
     def placeNode(self, canvas):
