@@ -339,8 +339,8 @@ class App:
         for node in App.nodes:
             if node.blockType == Node.STARTBLOCK:
                 startNode = node
-        startNode.activate()
-        startNode.output()
+        startNode.activate(App.variables)
+        startNode.output(App.variables)
 
     def about():
         messagebox.showinfo('About', 'What do you expect of a test program?')
