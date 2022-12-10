@@ -99,7 +99,7 @@ class Node:
         pass
 
     def destroy(self):
-        pass
+        self.widget.destroy()
 
     def deleteConnectors(self, canvas: tk.Canvas):
         try:
@@ -109,8 +109,11 @@ class Node:
         except:
             print("no existing line")
 
-    def removeConnector(self,node):
-        pass
+    def removeConnector(self,canvas:tk.Canvas,node):
+        for line in self.connector:
+            if line[0] == node:
+                canvas.delete(line[1])
+                self.connector.remove(line)
 
 class SetVariable(Node):
 
@@ -193,25 +196,6 @@ class SetVariable(Node):
         self.lastVarName = self.varName.get()
         for node in self.nextNode:
             self.widget.after(500,lambda:node.output(varDict))
-
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
 
 class ChangeVariable(Node):
 
@@ -344,25 +328,6 @@ class ChangeVariable(Node):
                         varDict[name] *= varDict[value]
         for node in self.nextNode:
             self.widget.after(500,lambda:node.output(varDict))
-
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
 
 class NewIfBlock(Node):
     
@@ -802,9 +767,9 @@ class NewWhileLoop(Node):
         result = self.evaluate(varDict)
         if result:
             for node in self.nextNode:
-                node.activate()
+                self.widget.after(500,lambda:node.activate(varDict))
         else:
-            self.loopEndNode.activate()
+            self.widget.after(500,lambda:self.loopEndNode.activate(varDict))
 
     def destroy(self):
         super().destroy()
@@ -963,6 +928,29 @@ class NewForLoop(Node):
             for node in self.lastNode:
                 node.connect(canva)
 
+    def output(self, varDict:Dict):
+        result = self.evaluate(varDict)
+        if result:
+            for node in self.nextNode:
+                self.widget.after(500,lambda:node.output(varDict))
+        else:
+            self.widget.after(500,lambda:self.loopEndNode.output(varDict))
+
+    def activate(self, varDict:Dict):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        result = self.evaluate(varDict)
+        if result:
+            for node in self.nextNode:
+                self.widget.after(500,lambda:node.activate(varDict))
+        else:
+            self.widget.after(500,lambda:self.loopEndNode.activate(varDict))
+    
+    def destroy(self):
+        super().destroy()
+        self.loopEndNode.destroy()
+
 class TextNode(Node):
 
     textDict = {Node.IFTRUEBLOCK:"True", Node.IFFALSEBLOCK:"False", Node.LOOPENDBLOCK:"End Loop"}
@@ -992,32 +980,26 @@ class TextNode(Node):
 
         self.window=canvas.create_window(xpos,ypos,window=self.widget, anchor="nw")
 
-    def activate(self, time: int):
-        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+    def activate(self, varDict):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
-            time+500, lambda: self.widget.config(background='#e6e6e6'))
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.activate(varDict))
 
-    def output(self):
-        pass
+    def output(self,varDict):
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.output(varDict))
 
-    def destroy(self):
-        self.widget.destroy()
+    def removeConnector(self, canvas: tk.Canvas, node):
+        if self.blockType == Node.IFTRUEBLOCK or self.blockType == Node.IFFALSEBLOCK or self.blockType == Node.LOOPENDBLOCK:
+            self.deleteConnectors(canvas)
+            for node in self.nextNode:
+                node.lastNode.remove(self)
+                node.removeConnector(canvas,self)
+            return
 
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
+        super().removeConnector(canvas, node)
 
 class InputBlock(Node):
     
@@ -1071,32 +1053,16 @@ class InputBlock(Node):
         self.widget.grid_columnconfigure(self.inputCount+1,weight=1)
         self.widget.config(width=150+self.inputCount*50)
 
-    def activate(self, time: int):
-        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+    def activate(self, varDict):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
-            time+500, lambda: self.widget.config(background='#e6e6e6'))
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.activate(varDict))
 
-    def output(self):
-        pass
-
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
+    def output(self,varDict):
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.output(varDict))
 
 class OutputBlock(Node):
 
@@ -1195,32 +1161,16 @@ class OutputBlock(Node):
         for name in self.varNames:
             self.outputVar['menu'].add_command(label=name, command=tk._setit(self.outputs[0], name))
 
-    def activate(self, time: int):
-        self.widget.after(time, lambda: self.widget.config(background='#ccafaf'))
+    def activate(self, varDict):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
-            time+500, lambda: self.widget.config(background='#e6e6e6'))
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.activate(varDict))
 
-    def output(self):
-        pass
-
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
+    def output(self,varDict):
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.output(varDict))
 
 class StartBlock(Node):
     
@@ -1260,25 +1210,6 @@ class StartBlock(Node):
         for node in self.nextNode:
             self.widget.after(500,lambda:node.output(varDict))
 
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")
-
 class EndBlock(Node):
     
     def __init__(self, window) -> None:
@@ -1313,22 +1244,3 @@ class EndBlock(Node):
 
     def output(self, varDict):
         return
-
-    def destroy(self):
-        self.widget.destroy()
-
-    def deleteConnectors(self, canvas: tk.Canvas):
-        try:
-            for line in self.connector:
-                canvas.delete(line[1])
-            self.connector = []
-        except:
-            print("no existing line")
-
-    def removeConnector(self,canvas:tk.Canvas,node):
-        try:
-            for line in self.connector:
-                if line[0] == node:
-                    canvas.delete(line[1])
-        except:
-            print("no such line or node")

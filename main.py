@@ -3,7 +3,7 @@ from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar,
 from tkinter import font
 from typing import List
 
-from node import ForLoop, IfBlock, Node, SetVariable, WhileLoop, NewIfBlock, NewWhileLoop, NewForLoop, ChangeVariable, StartBlock, EndBlock, InputBlock, OutputBlock
+from node import Node, SetVariable, NewIfBlock, NewWhileLoop, NewForLoop, ChangeVariable, StartBlock, EndBlock, InputBlock, OutputBlock
 
 
 class App:
@@ -79,12 +79,6 @@ class App:
         match choice.get():
             case Node.SETVARIABLE:
                 App.nodes.append(SetVariable(App.canvas, App.variables))
-            case Node.IFBLOCK:
-                App.nodes.append(IfBlock(App.canvas,App.variables))
-            case Node.FORLOOP:
-                App.nodes.append(ForLoop(App.canvas,App.createNode, App.variables))
-            case Node.WHILELOOP:
-                App.nodes.append(WhileLoop(App.canvas,App.createNode,App.variables))
             case Node.NEWIFBLOCK:
                 App.nodes.append(NewIfBlock(App.canvas,App.variables,App.placeChildNode))
             case Node.NEWWHILELOOP:
@@ -154,8 +148,10 @@ class App:
         
         for node in App.rootNode.nextNode:
             node.lastNode.remove(App.rootNode)
+            node.removeConnector(App.canvas,App.rootNode)
         for node in App.rootNode.lastNode:
             node.nextNode.remove(App.rootNode)
+            node.removeConnector(App.canvas,App.rootNode)
         App.nodes.remove(App.rootNode)
         App.rootNode.destroy()
         App.rootNode.deleteConnectors(App.canvas)
