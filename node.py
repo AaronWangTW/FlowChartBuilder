@@ -786,11 +786,13 @@ class NewForLoop(Node):
         self.blockType = Node.NEWFORLOOP
 
         self.widget = tk.Frame(
-            window, bg="#e6e6e6", height=250, width=300)
+            window, bg="#e6e6e6", height=250, width=350)
 
-        self.background = tk.Canvas(self.widget,background="white",height=200,width=300)
+        self.background = tk.Canvas(self.widget,background="white",height=200,width=350)
 
         self.header = tk.Frame(self.widget,height=50,width=300,bg="white")
+
+        self.loopInit = True
 
         rhombusPoints = [
             5,self.background.winfo_reqheight()/2,
@@ -811,6 +813,7 @@ class NewForLoop(Node):
             self.iterLabel2.config(text="; "+self.iterator.get())
 
         self.iterator.trace_add("write",updateLabel)
+        self.iterator.trace_add("write",lambda name, index, mode, value=self.iterator: self.putIterator(varDict))
 
         self.iteratorChoice = OptionMenu(self.header, self.iterator ,*NewForLoop.iterators)
         self.iteratorChoice['font']=fontGroup
@@ -822,6 +825,8 @@ class NewForLoop(Node):
         self.initValue = tk.IntVar()
         self.initInput = tk.Entry(self.header,textvariable=self.initValue,borderwidth=0,width=3)
         self.initInput.pack(side="left",ipady=3)
+
+        self.initValue.trace_add("write",lambda name, index, mode, value=self.initValue: self.putIterator(varDict))
 
         self.iterLabel = tk.Label(self.header,text="; ",font=fontGroup,bg="white")
         self.iterLabel.pack(side="left")
@@ -849,15 +854,13 @@ class NewForLoop(Node):
         self.changeInput = tk.Entry(self.header,textvariable=self.changeValue,borderwidth=0,width=3)
         self.changeInput.pack(side="left",ipady=3)
 
-        self.loopEndNode = TextNode(window,Node.LOOPENDBLOCK)
-
-        self.loopEndNode.lastNode.append(self)
+        self.loopEndNode = LoopEndBlock(window,self)
 
         self.placeChild = placeChild
 
         self.varDict = varDict
 
-        self.nextNode: List[Node] = [self.loopEndNode]
+        self.nextNode: List[Node] = []
         self.lastNode: List[Node] = []
         self.connector = []
     
@@ -878,7 +881,36 @@ class NewForLoop(Node):
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
         self.connect(canvas)
 
+    def connectLoopEndNode(self,canva:tk.Canvas):
+        pos = canva.bbox(self.window)
+        ax0 = pos[0]
+        ay0 = pos[1]
+        ax1 = pos[2]
+        ay1 = pos[3]
+        x0 = (ax0 + ax1) / 2
+        y0 = (ay0 + ay1) / 2
+        pos = canva.bbox(self.loopEndNode.window)
+        bx0 = pos[0]
+        by0 = pos[1]
+        bx1 = pos[2]
+        by1 = pos[3]
+        x1 = (bx0 + bx1) / 2
+        y1 = (by0 + by1) / 2
+        startConnnector = canva.create_line(
+            x0, y0, x0+200, y0, fill="black", width=4, tags=("loopEndConnector"))
+        midConnector = canva.create_line(
+            x0+200, y0, x0+200, y1, fill="black", width=4, tags=("loopEndConnector"))
+        endConnector = canva.create_line(
+            x0+200, y1, x1, y1, fill="black", width=4, tags=("loopEndConnector"))
+        canva.tag_lower(startConnnector)
+        canva.tag_lower(midConnector)
+        canva.tag_lower(endConnector)
+        self.connector.append((self.loopEndNode, startConnnector))
+        self.connector.append((self.loopEndNode, midConnector))
+        self.connector.append((self.loopEndNode, endConnector))
+
     def connect(self, canva: tk.Canvas):
+
         if len(self.nextNode) > 0:
             try:
                 for line in self.connector:
@@ -906,46 +938,90 @@ class NewForLoop(Node):
                 x1 = (bx0 + bx1) / 2
                 y1 = (by0 + by1) / 2
 
-                if node.blockType == Node.LOOPENDBLOCK:
-                    startConnnector = canva.create_line(
-                        x0,y0,x0+200,y0,fill="black",width=4, tags=("loopEndConnector"))
-                    midConnector = canva.create_line(
-                        x0+200,y0,x0+200,y1,fill="black",width=4,tags=("loopEndConnector"))
-                    endConnector = canva.create_line(
-                        x0+200,y1,x1,y1,fill="black",width=4,tags=("loopEndConnector"))
-                    canva.tag_lower(startConnnector)
-                    canva.tag_lower(midConnector)
-                    canva.tag_lower(endConnector)
-                    self.connector.append((node,startConnnector))
-                    self.connector.append((node,midConnector))
-                    self.connector.append((node,endConnector))
-                else:
-                    line_id = canva.create_line(
-                        x0, y0, x1, y1, fill="black", width=4, tags=())
-                    canva.tag_lower(line_id)
-                    self.connector.append((node, line_id))
+                line_id = canva.create_line(
+                    x0, y0, x1, y1, fill="black", width=4, tags=())
+                canva.tag_lower(line_id)
+                self.connector.append((node, line_id))
+        else:
+            try:
+                for line in self.connector:
+                    canva.delete(line[1])
+                self.connector = []
+            except:
+                print("no existing line")
+            
         if len(self.lastNode) > 0:
             for node in self.lastNode:
                 node.connect(canva)
+        
+        self.connectLoopEndNode(canva)
+
+    def evaluate(self,varDict:Dict):
+        result = None
+
+        varName = self.iterator.get()
+        value = self.targetValue.get()
+
+        match self.operator.get():
+            case '>':
+                result = varDict[varName] > int(value)
+            case '<':
+                result = varDict[varName] < int(value)
+            case '>=':
+                result = varDict[varName] >= int(value)
+            case '<=':
+                result = varDict[varName] <= int(value)
+
+        return result
+
+    def putIterator(self, varDict:Dict):
+        if self.iterator.get() != "":
+            name = self.iterator.get()
+            value = self.initValue.get()
+            if value != "":
+                varDict[name] = int(value)
+
+    def modifyIterator(self,varDict:Dict):
+        iterator = self.iterator.get()
+        value = int(self.changeValue.get())
+        match self.modifier.get():
+            case '+=':
+                varDict[iterator]+=value
+            case '-=':
+                varDict[iterator]-=value
+            case '*=':
+                varDict[iterator]*=value
+            case '//=':
+                varDict[iterator]//=value
 
     def output(self, varDict:Dict):
+
+        if self.loopInit:
+            self.putIterator(varDict)
+            self.loopInit = False
+        else:
+            self.modifyIterator(varDict)
+        
         result = self.evaluate(varDict)
         if result:
             for node in self.nextNode:
                 self.widget.after(500,lambda:node.output(varDict))
         else:
-            self.widget.after(500,lambda:self.loopEndNode.output(varDict))
+            self.widget.after(500,lambda:self.loopEndNode.output(varDict,True))
+            self.loopInit = True
+        print(varDict, self.loopInit)
 
     def activate(self, varDict:Dict):
+        result = self.evaluate(varDict)
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        result = self.evaluate(varDict)
+
         if result:
             for node in self.nextNode:
                 self.widget.after(500,lambda:node.activate(varDict))
         else:
-            self.widget.after(500,lambda:self.loopEndNode.activate(varDict))
+            self.widget.after(500,lambda:self.loopEndNode.activate(varDict,True))
     
     def destroy(self):
         super().destroy()
@@ -1000,6 +1076,51 @@ class TextNode(Node):
             return
 
         super().removeConnector(canvas, node)
+
+class LoopEndBlock(TextNode):
+
+    def __init__(self, window, parentLoop:Node) -> None:
+        self.widget = tk.Frame(
+            window, bg="#e6e6e6", height=75, width=100)
+
+        self.blockType = Node.LOOPENDBLOCK
+
+        self.parentLoop = parentLoop
+
+        fontGroup = font.Font(size=13,family="Arial")
+
+        self.titleLabel = tk.Label(self.widget, text="End Loop",font=fontGroup, background="#e6e6e6", width=10)
+        self.titleLabel.grid(row=0,column=0)
+
+        self.widget.grid_columnconfigure(0,weight=1)
+        self.widget.grid_rowconfigure(0,weight=1)
+        
+        self.nextNode: List[Node] = []
+        self.lastNode: List[Node] = []
+        self.connector = []
+
+    def activate(self, varDict, breakLoop=False):
+        self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
+        self.widget.after(
+            500, lambda: self.widget.config(background='#e6e6e6'))
+        if breakLoop:
+            for node in self.nextNode:
+                self.widget.after(500,lambda:node.activate(varDict))
+        else:
+            self.widget.after(500,lambda:self.parentLoop.activate(varDict))
+
+
+    def output(self,varDict:Dict, breakLoop = False):
+        if breakLoop:
+            for node in self.nextNode:
+                self.widget.after(500,lambda:node.output(varDict))
+        else:
+            self.widget.after(500,lambda:self.parentLoop.output(varDict))
+            
+    
+    def connect(self, canva: tk.Canvas):
+        super().connect(canva)
+        self.parentLoop.connect(canva)
 
 class InputBlock(Node):
     
@@ -1218,6 +1339,9 @@ class EndBlock(Node):
 
         self.blockType = Node.ENDBLOCK
 
+        self.initVarDict = {}
+        self.varReference = {}
+
         fontGroup = font.Font(size=13,family="Arial")
 
         self.titleLabel = tk.Label(self.widget, text="End",font=fontGroup, background="#c46e71", width=10)
@@ -1242,5 +1366,9 @@ class EndBlock(Node):
         self.widget.after(
             500, lambda: self.widget.config(background='#c46e71'))
 
+    def resetVars(self):
+        self.varReference = self.initVarDict.copy()
+
     def output(self, varDict):
+        self.widget.after(1000,self.resetVars)
         return

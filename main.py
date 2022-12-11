@@ -335,6 +335,9 @@ class App:
         for node in App.nodes:
             if node.blockType == Node.STARTBLOCK:
                 startNode = node
+            if node.blockType == Node.ENDBLOCK:
+                node.initVarDict = App.variables.copy()
+                node.varReference = App.variables
         startNode.activate(App.variables)
         startNode.output(App.variables)
 
