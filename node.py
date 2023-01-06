@@ -22,7 +22,7 @@ class Node:
     INPUTBLOCK = "Input Block"
     OUTPUTBLOCK = "Output Block"
 
-    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE, STARTBLOCK, ENDBLOCK, INPUTBLOCK, OUTPUTBLOCK]
+    types = [SETVARIABLE, NEWIFBLOCK, NEWWHILELOOP, NEWFORLOOP, CHANGEVARIABLE, INPUTBLOCK, OUTPUTBLOCK]
 
     descriptions = {
         SETVARIABLE: "set up a variable of any customized name",
@@ -42,8 +42,6 @@ class Node:
         self.lastNode: List[Node] = []
         self.connector = []
         self.window = ""
-        self.snap_distance = 20
-
 
     def connect(self, canva: tk.Canvas):
         if len(self.nextNode) > 0:
@@ -83,19 +81,13 @@ class Node:
             for node in self.lastNode:
                 node.connect(canva)
 
-    def setNextNode(self, node):
-        self.nextNode = node
-
-    def removeNextNode(self):
-        self.nextNode = []
-
     def placeNode(self):
         self.widget.pack()
 
-    def activate(self):
+    def activate(self,varDict:Dict):
         pass
 
-    def output(self):
+    def output(self,varDict:Dict):
         pass
 
     def destroy(self):
@@ -114,6 +106,12 @@ class Node:
             if line[0] == node:
                 canvas.delete(line[1])
                 self.connector.remove(line)
+
+    def run(self,varDict:Dict):
+        self.output(varDict)
+        self.activate(varDict)
+        for node in self.nextNode:
+            self.widget.after(500,lambda:node.run(varDict))
 
 class SetVariable(Node):
 
@@ -169,8 +167,6 @@ class SetVariable(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
 
     def setVarName(self, varName: str):
         self.varName = varName
@@ -194,8 +190,6 @@ class SetVariable(Node):
                     else:
                         varDict[name] = None
         self.lastVarName = self.varName.get()
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
 
 class ChangeVariable(Node):
 
@@ -274,11 +268,6 @@ class ChangeVariable(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
-
-    def setVarName(self, varName: str):
-        self.varName = varName
     
     def refresh(self, variables:Dict):
         self.varNames = list(variables.keys())
@@ -326,13 +315,20 @@ class ChangeVariable(Node):
                         varDict[name] *= value
                     else:
                         varDict[name] *= varDict[value]
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
 
 class NewIfBlock(Node):
     
     operators = ['>','<','==','!=','>=','<=']
     types = ['int','string','double','var']
+
+    comparators = {
+    '>':"__gt__",
+    '<':"__lt__",
+    '==':"__eq__",
+    '!=':"__ne__",
+    '>=':"__ge__",
+    '<=':"__le__"
+    }
 
     def __init__(self, window, variables:Dict, placeChild) -> None:
         fontGroup = font.Font(size=13,family="Arial")
@@ -442,67 +438,18 @@ class NewIfBlock(Node):
         varName = self.firstValue.get()
         value = self.secondValue.get()
 
-        match self.operator.get():
-            case '>':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] > int(value)
-                    case'string':
-                        result = varDict[varName] > value
-                    case 'double':
-                        result = varDict[varName] > float(value)
-                    case 'var':
-                        result = varDict[varName] > varDict[value]
-            case '<':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] < int(value)
-                    case'string':
-                        result = varDict[varName] < value
-                    case 'double':
-                        result = varDict[varName] < float(value)
-                    case 'var':
-                        result = varDict[varName] < varDict[value]
-            case '==':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] == int(value)
-                    case'string':
-                        result = varDict[varName] == value
-                    case 'double':
-                        result = varDict[varName] == float(value)
-                    case 'var':
-                        result = varDict[varName] == varDict[value]
-            case '!=':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] != int(value)
-                    case'string':
-                        result = varDict[varName] != value
-                    case 'double':
-                        result = varDict[varName] != float(value)
-                    case 'var':
-                        result = varDict[varName] != varDict[value]
-            case '>=':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] >= int(value)
-                    case'string':
-                        result = varDict[varName] >= value
-                    case 'double':
-                        result = varDict[varName] >= float(value)
-                    case 'var':
-                        result = varDict[varName] >= varDict[value]
-            case '<=':
-                match self.secondType.get():
-                    case 'int':
-                        result = varDict[varName] <= int(value)
-                    case'string':
-                        result = varDict[varName] <= value
-                    case 'double':
-                        result = varDict[varName] <= float(value)
-                    case 'var':
-                        result = varDict[varName] <= varDict[value]
+        comp = NewIfBlock.comparators.get(self.operator.get())
+
+
+        match self.secondType.get():
+            case 'int':
+                result = varDict[varName].__getattribute__(comp)(int(value))
+            case'string':
+                result = varDict[varName].__getattribute__(comp)(value)
+            case 'double':
+                result = varDict[varName].__getattribute__(comp)(float(value))
+            case 'var':
+                result = varDict[varName].__getattribute__(comp)(varDict[value])
 
         return result
 
@@ -510,11 +457,6 @@ class NewIfBlock(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        result = self.evaluate(varDict)
-        if result:
-            self.widget.after(500,lambda:self.trueBranchNode.activate(varDict))
-        else:
-            self.widget.after(500,lambda:self.falseBranchNode.activate(varDict))
 
     def destroy(self):
         super().destroy()
@@ -522,11 +464,16 @@ class NewIfBlock(Node):
         self.falseBranchNode.destroy()
 
     def output(self,varDict:Dict):
+        pass
+
+    def run(self, varDict: Dict):
+        self.output(varDict)
+        self.activate(varDict)
         result = self.evaluate(varDict)
         if result:
-            self.widget.after(500,lambda:self.trueBranchNode.output(varDict))
+            self.widget.after(500,lambda:self.trueBranchNode.run(varDict))
         else:
-            self.widget.after(500,lambda:self.falseBranchNode.output(varDict))
+            self.widget.after(500,lambda:self.falseBranchNode.run(varDict))
 
 class NewWhileLoop(Node):
     
@@ -1001,27 +948,22 @@ class NewForLoop(Node):
             self.loopInit = False
         else:
             self.modifyIterator(varDict)
-        
-        result = self.evaluate(varDict)
-        if result:
-            for node in self.nextNode:
-                self.widget.after(500,lambda:node.output(varDict))
-        else:
-            self.widget.after(500,lambda:self.loopEndNode.output(varDict,True))
-            self.loopInit = True
-        print(varDict, self.loopInit)
 
     def activate(self, varDict:Dict):
-        result = self.evaluate(varDict)
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
+    def run(self, varDict: Dict):
+        self.output()
+        self.activate()
+        result = self.evaluate(varDict)
         if result:
             for node in self.nextNode:
-                self.widget.after(500,lambda:node.activate(varDict))
+                self.widget.after(500,lambda:node.run(varDict))
         else:
-            self.widget.after(500,lambda:self.loopEndNode.activate(varDict,True))
+            self.loopInit = True
+            self.widget.after(500,lambda:self.loopEndNode.run(varDict,True))
     
     def destroy(self):
         super().destroy()
@@ -1060,12 +1002,9 @@ class TextNode(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
 
     def output(self,varDict):
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
+        pass
 
     def removeConnector(self, canvas: tk.Canvas, node):
         if self.blockType == Node.IFTRUEBLOCK or self.blockType == Node.IFFALSEBLOCK or self.blockType == Node.LOOPENDBLOCK:
@@ -1103,19 +1042,18 @@ class LoopEndBlock(TextNode):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        if breakLoop:
-            for node in self.nextNode:
-                self.widget.after(500,lambda:node.activate(varDict))
-        else:
-            self.widget.after(500,lambda:self.parentLoop.activate(varDict))
-
 
     def output(self,varDict:Dict, breakLoop = False):
+        pass
+
+    def run(self, varDict: Dict, breakLoop = False):
+        self.output()
+        self.activate()
         if breakLoop:
             for node in self.nextNode:
-                self.widget.after(500,lambda:node.output(varDict))
+                self.widget.after(500,lambda:node.run(varDict))
         else:
-            self.widget.after(500,lambda:self.parentLoop.output(varDict))
+            self.widget.after(500,lambda:self.parentLoop.run(varDict))
             
     
     def connect(self, canva: tk.Canvas):
@@ -1324,12 +1262,9 @@ class StartBlock(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#83c282'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
 
     def output(self,varDict):
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
+        pass
 
 class EndBlock(Node):
     
@@ -1358,8 +1293,7 @@ class EndBlock(Node):
         self.widget.pack(expand=True, fill=BOTH)
         self.widget.grid_propagate(False)
         self.widget.place(x=0, y=0)
-
-        self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+        self.window=canvas.create_window(200,0,window=self.widget, anchor="nw")
 
     def activate(self, varDict):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))

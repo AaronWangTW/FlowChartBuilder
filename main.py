@@ -145,6 +145,10 @@ class App:
         for node in App.nodes:
             node.widget.bind("<ButtonRelease-1>", None)
         App.canvas.bind("<Button-3>",None)
+
+        if App.rootNode.blockType == Node.STARTBLOCK or App.rootNode.blockType == Node.ENDBLOCK:
+            messagebox.showwarning("Deletion Error","Cannot delete start or end block")
+            return
         
         for node in App.rootNode.nextNode:
             node.lastNode.remove(App.rootNode)
@@ -330,7 +334,7 @@ class App:
             App.nextNode.lastNode.remove(App.rootNode)
             App.rootNode.removeConnector(App.canvas,App.nextNode)
 
-    def run(delay: int):
+    def run():
         print("run")
         for node in App.nodes:
             if node.blockType == Node.STARTBLOCK:
@@ -338,8 +342,7 @@ class App:
             if node.blockType == Node.ENDBLOCK:
                 node.initVarDict = App.variables.copy()
                 node.varReference = App.variables
-        startNode.activate(App.variables)
-        startNode.output(App.variables)
+        startNode.run(App.variables)
 
     def about():
         messagebox.showinfo('About', 'What do you expect of a test program?')
@@ -348,6 +351,15 @@ class App:
         App.root.title("Test Program")
         App.root.geometry("1200x760+200+150")
         App.root.resizable(False, False)
+
+        start = StartBlock(App.canvas)
+        end = EndBlock(App.canvas)
+        App.nodes.append(start)
+        App.nodes.append(end)
+        start.placeNode(App.canvas)
+        end.placeNode(App.canvas)
+        App.make_draggable(start)
+        App.make_draggable(end)
 
     def menu():
         menubar = tk.Menu(App.root, background='#fff', foreground='black',
@@ -408,7 +420,7 @@ class App:
         unlinkButton.grid(column=0, row=3, padx=20, pady=10, rowspan=1)
 
         runButton = tk.Button(App.toolBox, text="run",
-                              height=10, width=22, command=lambda: App.run(1000))
+                              height=10, width=22, command=lambda: App.run())
         runButton.grid(column=0, row=4, padx=20, pady=20, rowspan=2)
 
 try:
