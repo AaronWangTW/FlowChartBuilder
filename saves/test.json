@@ -1,0 +1,54 @@
+{
+    "nodes": {
+        "0": {
+            "x": 0,
+            "y": 0,
+            "blockType": "Start Block",
+            "nextNode": [
+                2
+            ]
+        },
+        "1": {
+            "x": 200,
+            "y": 0,
+            "blockType": "End Block",
+            "lastNode": [
+                3
+            ]
+        },
+        "2": {
+            "x": 156,
+            "y": 78,
+            "blockType": "Input Block",
+            "inputCount": 1,
+            "inputVars": [
+                ""
+            ],
+            "nextNode": [
+                3
+            ],
+            "lastNode": [
+                0
+            ]
+        },
+        "3": {
+            "x": 151,
+            "y": 158,
+            "blockType": "Output Block",
+            "outputCount": 1,
+            "outputs": [
+                ""
+            ],
+            "outputType": "",
+            "nextNode": [
+                1
+            ],
+            "lastNode": [
+                2
+            ]
+        }
+    },
+    "variables": {
+        "test": 1
+    }
+}

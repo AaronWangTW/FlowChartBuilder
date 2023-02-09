@@ -42,6 +42,7 @@ class Node:
         self.lastNode: List[Node] = []
         self.connector = []
         self.window = ""
+        self.id = -1
 
     def connect(self, canva: tk.Canvas):
         if len(self.nextNode) > 0:
@@ -118,6 +119,7 @@ class SetVariable(Node):
     types = ['int','string','double']
 
     def __init__(self, window, varDict) -> None:
+        super().__init__()
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=100, width=200)
 
@@ -197,6 +199,7 @@ class ChangeVariable(Node):
     operators = ['=','+=','-=','/=','//=','%=','*=']
     
     def __init__(self, window, varDict) -> None:
+        super().__init__()
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=100, width=300)
 
@@ -331,6 +334,7 @@ class NewIfBlock(Node):
     }
 
     def __init__(self, window, variables:Dict, placeChild) -> None:
+        super().__init__()
         fontGroup = font.Font(size=13,family="Arial")
         
         self.blockType = Node.NEWIFBLOCK
@@ -533,7 +537,7 @@ class NewWhileLoop(Node):
         self.targetChoice['font']=fontGroup
         self.targetChoice.pack(side="left")
 
-        self.loopEndNode = TextNode(window,Node.LOOPENDBLOCK)
+        self.loopEndNode = LoopEndBlock(window,self)
 
         self.loopEndNode.lastNode.append(self)
 
@@ -700,27 +704,26 @@ class NewWhileLoop(Node):
         return result
 
     def output(self, varDict:Dict):
-        result = self.evaluate(varDict)
-        if result:
-            for node in self.nextNode:
-                self.widget.after(500,lambda:node.output(varDict))
-        else:
-            self.widget.after(500,lambda:self.loopEndNode.output(varDict))
+        pass
 
     def activate(self, varDict:Dict):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        result = self.evaluate(varDict)
-        if result:
-            for node in self.nextNode:
-                self.widget.after(500,lambda:node.activate(varDict))
-        else:
-            self.widget.after(500,lambda:self.loopEndNode.activate(varDict))
 
     def destroy(self):
         super().destroy()
         self.loopEndNode.destroy()
+
+    def run(self, varDict: Dict):
+        self.output(varDict)
+        self.activate(varDict)
+        result = self.evaluate(varDict)
+        if result:
+            for node in self.nextNode:
+                self.widget.after(500,lambda:node.run(varDict))
+        else:
+            self.widget.after(500,lambda:self.loopEndNode.run(varDict))
 
 class NewForLoop(Node):
     
@@ -974,6 +977,7 @@ class TextNode(Node):
     textDict = {Node.IFTRUEBLOCK:"True", Node.IFFALSEBLOCK:"False", Node.LOOPENDBLOCK:"End Loop"}
 
     def __init__(self, window, type) -> None:
+        super().__init__()
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=75, width=100)
 
@@ -1019,6 +1023,7 @@ class TextNode(Node):
 class LoopEndBlock(TextNode):
 
     def __init__(self, window, parentLoop:Node) -> None:
+        self.id = -1
         self.widget = tk.Frame(
             window, bg="#e6e6e6", height=75, width=100)
 
@@ -1063,6 +1068,7 @@ class LoopEndBlock(TextNode):
 class InputBlock(Node):
     
     def __init__(self, window, variables:Dict) -> None:
+        super().__init__()
         self.inputCount = 1
 
         self.widget = tk.Frame(
@@ -1116,18 +1122,16 @@ class InputBlock(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
 
     def output(self,varDict):
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
+        pass
 
 class OutputBlock(Node):
 
     types = ['var','string']
     
     def __init__(self, window, variables:Dict) -> None:
+        super().__init__()
         self.outputCount = 1
 
         self.widget = tk.Frame(
@@ -1224,16 +1228,14 @@ class OutputBlock(Node):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.activate(varDict))
 
     def output(self,varDict):
-        for node in self.nextNode:
-            self.widget.after(500,lambda:node.output(varDict))
+        pass
 
 class StartBlock(Node):
     
     def __init__(self, window) -> None:
+        super().__init__()
         self.widget = tk.Frame(
             window, bg="#83c282", height=50, width=100)
 
@@ -1269,6 +1271,7 @@ class StartBlock(Node):
 class EndBlock(Node):
     
     def __init__(self, window) -> None:
+        super().__init__()
         self.widget = tk.Frame(
             window, bg="#c46e71", height=50, width=100)
 

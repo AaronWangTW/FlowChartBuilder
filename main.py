@@ -1,9 +1,14 @@
 import tkinter as tk
+import json
+import os.path
 from tkinter import BOTH, LEFT, NONE, RIGHT, TOP, IntVar, OptionMenu, StringVar, mainloop, messagebox
 from tkinter import font
 from typing import List
+from pathvalidate import is_valid_filename
 
 from node import Node, SetVariable, NewIfBlock, NewWhileLoop, NewForLoop, ChangeVariable, StartBlock, EndBlock, InputBlock, OutputBlock
+
+import nodeSerializer
 
 
 class App:
@@ -22,8 +27,11 @@ class App:
 
     nodes: List[Node] = []
     variables = {'test':1}
+    idCount = 0
 
     cancel = False
+
+    currentChartName = None
 
     def createNode():
 
@@ -111,12 +119,18 @@ class App:
                 App.nodes.append(InputBlock(App.canvas,App.variables))
             case Node.OUTPUTBLOCK:
                 App.nodes.append(OutputBlock(App.canvas,App.variables))
-            
-        App.nodes[-1].placeNode(App.canvas)
+        
+        App.nodes[-1].id = App.idCount
+        App.idCount+=1
         App.make_draggable(App.nodes[-1])
+        App.nodes[-1].placeNode(App.canvas)
+        
 
     def placeChildNode(node:Node, xpos, ypos):
         node.placeNode(App.canvas,xpos,ypos)
+        node.id = App.idCount
+        App.idCount+=1
+        App.nodes.append(node)
         App.make_draggable(node)
 
     def removeNode():
@@ -344,6 +358,124 @@ class App:
                 node.varReference = App.variables
         startNode.run(App.variables)
 
+    def exportToJSON():
+        result = {}
+
+        result['nodes'] = {}
+        result['variables'] = App.variables.copy()
+
+        serializer = nodeSerializer.NodeSerializer(App.canvas)
+        for node in App.nodes:
+            # use node serializers
+            nodeDict = {}
+            match node.blockType:
+                case Node.SETVARIABLE:
+                    nodeDict = serializer.setVariableSe(node)
+                case Node.CHANGEVARIABLE:
+                    nodeDict = serializer.changeVariableSe(node)
+                case Node.NEWIFBLOCK:
+                    nodeDict = serializer.ifBlockSe(node)
+                case Node.NEWWHILELOOP:
+                    nodeDict = serializer.whileLoopSe(node)
+                case Node.NEWFORLOOP:
+                    nodeDict = serializer.forLoopSe(node)
+                case Node.IFTRUEBLOCK | Node.IFFALSEBLOCK:
+                    nodeDict = serializer.textNodeSe(node)
+                case Node.LOOPENDBLOCK:
+                    nodeDict = serializer.loopEndSe(node)
+                case Node.INPUTBLOCK:
+                    nodeDict = serializer.inputSe(node)
+                case Node.OUTPUTBLOCK:
+                    nodeDict = serializer.outputSe(node)
+                case Node.STARTBLOCK:
+                    nodeDict = serializer.startSe(node)
+                case Node.ENDBLOCK:
+                    nodeDict = serializer.endSe(node)
+                case _:
+                    raise Exception("Node of unexpected type detected")
+            
+            result["nodes"][node.id] = nodeDict
+        
+        return result
+
+    def saveScreen():
+        def close_event():
+            screen.destroy()
+            screen.update()
+
+        chartName = tk.StringVar()
+
+        screen = tk.Toplevel()
+        screen.title("Save As...")
+        screen.geometry("300x200+200+150")
+        screen.resizable(False,False)
+        screen.protocol("WM_DELETE_WINDOW",close_event)
+        
+        instruction = tk.Label(screen,text="Enter the name for the flowchart",wraplength=300,font=("Arial",13))
+        instruction.pack(pady=(30,15))
+
+        nameInput = tk.Entry(screen,font=("Arial",13), textvariable=chartName,width=30)
+        nameInput.pack(pady=15)
+
+        def confirm():
+            screen.destroy()
+            screen.update()
+
+        def end():
+            chartName.set("-1")
+            screen.destroy()
+            screen.update()
+
+        decide = tk.Button(screen,text="Save",command=confirm, font=("Arial",13))
+        decide.pack(side=LEFT,padx=(60,0))
+
+        cancel = tk.Button(screen,text="Cancel",command=end, font=("Arial",13))
+        cancel.pack(side=RIGHT,padx=(0,60))
+
+        screen.wait_window(screen)
+
+        return chartName
+
+    def saveAs():
+        fileName = App.saveScreen().get()
+        if fileName == "-1":
+            return
+        fileName = fileName.replace(" ","_")
+        if not is_valid_filename(fileName):
+            messagebox.showwarning("Invalid Flowchart Name","Invalid flowchart name. Flowchart name should not contain any special characters.")
+            App.saveAs()
+            return
+        filePath = f"./saves/{fileName}.json"
+        if os.path.isfile(filePath):
+            confirmBox = tk.messagebox.askquestion('Replace File', f'The flowchart with name {fileName} already exists, would you like to replace existing file?',
+                                        icon='warning')
+            if confirmBox == 'yes':
+                App.saveToExisting(fileName)
+                return
+            else:
+                App.saveAs()
+                return
+
+        fileDict = App.exportToJSON()
+        with open(f"./saves/{fileName}.json","w",encoding="utf8") as file:
+            json.dump(fileDict,file,indent=4, ensure_ascii=False)
+        
+        App.currentChartName = fileName
+
+    def saveToExisting(fileName:str):
+        if not fileName:
+            App.saveAs()
+            return
+        fileDict = App.exportToJSON()
+        with open(f"./saves/{fileName}.json","w",encoding="utf8") as file:
+            json.dump(fileDict,file,indent=4, ensure_ascii=False)
+
+    def openOld():
+        pass
+
+    def openMenu():
+        pass
+
     def about():
         messagebox.showinfo('About', 'What do you expect of a test program?')
 
@@ -353,7 +485,11 @@ class App:
         App.root.resizable(False, False)
 
         start = StartBlock(App.canvas)
+        start.id = App.idCount
+        App.idCount+=1
         end = EndBlock(App.canvas)
+        end.id = App.idCount
+        App.idCount+=1
         App.nodes.append(start)
         App.nodes.append(end)
         start.placeNode(App.canvas)
@@ -368,8 +504,8 @@ class App:
                        background='#fff', foreground='black')
         file.add_command(label="New")
         file.add_command(label="Open")
-        file.add_command(label="Save")
-        file.add_command(label="Save as")
+        file.add_command(label="Save", command=lambda:App.saveToExisting(App.currentChartName))
+        file.add_command(label="Save as",command=App.saveAs)
         file.add_command(label="Exit", command=App.root.quit)
         menubar.add_cascade(label="File", menu=file)
 
