@@ -539,13 +539,11 @@ class NewWhileLoop(Node):
 
         self.loopEndNode = LoopEndBlock(window,self)
 
-        self.loopEndNode.lastNode.append(self)
-
         self.placeChild = placeChild
 
         self.varDict = varDict
 
-        self.nextNode: List[Node] = [self.loopEndNode]
+        self.nextNode: List[Node] = []
         self.lastNode: List[Node] = []
         self.connector = []
     
@@ -583,7 +581,36 @@ class NewWhileLoop(Node):
         for name in self.varNames:
             self.targetChoice['menu'].add_command(label=name, command=tk._setit(self.targetValue, name))
 
+    def connectLoopEndNode(self,canva:tk.Canvas):
+        pos = canva.bbox(self.window)
+        ax0 = pos[0]
+        ay0 = pos[1]
+        ax1 = pos[2]
+        ay1 = pos[3]
+        x0 = (ax0 + ax1) / 2
+        y0 = (ay0 + ay1) / 2
+        pos = canva.bbox(self.loopEndNode.window)
+        bx0 = pos[0]
+        by0 = pos[1]
+        bx1 = pos[2]
+        by1 = pos[3]
+        x1 = (bx0 + bx1) / 2
+        y1 = (by0 + by1) / 2
+        startConnnector = canva.create_line(
+            x0, y0, x0+200, y0, fill="black", width=4, tags=("loopEndConnector"))
+        midConnector = canva.create_line(
+            x0+200, y0, x0+200, y1, fill="black", width=4, tags=("loopEndConnector"))
+        endConnector = canva.create_line(
+            x0+200, y1, x1, y1, fill="black", width=4, tags=("loopEndConnector"))
+        canva.tag_lower(startConnnector)
+        canva.tag_lower(midConnector)
+        canva.tag_lower(endConnector)
+        self.connector.append((self.loopEndNode, startConnnector))
+        self.connector.append((self.loopEndNode, midConnector))
+        self.connector.append((self.loopEndNode, endConnector))
+
     def connect(self, canva: tk.Canvas):
+
         if len(self.nextNode) > 0:
             try:
                 for line in self.connector:
@@ -611,27 +638,23 @@ class NewWhileLoop(Node):
                 x1 = (bx0 + bx1) / 2
                 y1 = (by0 + by1) / 2
 
-                if node.blockType == Node.LOOPENDBLOCK:
-                    startConnnector = canva.create_line(
-                        x0,y0,x0+200,y0,fill="black",width=4, tags=("loopEndConnector"))
-                    midConnector = canva.create_line(
-                        x0+200,y0,x0+200,y1,fill="black",width=4,tags=("loopEndConnector"))
-                    endConnector = canva.create_line(
-                        x0+200,y1,x1,y1,fill="black",width=4,tags=("loopEndConnector"))
-                    canva.tag_lower(startConnnector)
-                    canva.tag_lower(midConnector)
-                    canva.tag_lower(endConnector)
-                    self.connector.append((node,startConnnector))
-                    self.connector.append((node,midConnector))
-                    self.connector.append((node,endConnector))
-                else:
-                    line_id = canva.create_line(
-                        x0, y0, x1, y1, fill="black", width=4, tags=())
-                    canva.tag_lower(line_id)
-                    self.connector.append((node, line_id))
+                line_id = canva.create_line(
+                    x0, y0, x1, y1, fill="black", width=4, tags=())
+                canva.tag_lower(line_id)
+                self.connector.append((node, line_id))
+        else:
+            try:
+                for line in self.connector:
+                    canva.delete(line[1])
+                self.connector = []
+            except:
+                print("no existing line")
+            
         if len(self.lastNode) > 0:
             for node in self.lastNode:
                 node.connect(canva)
+        
+        self.connectLoopEndNode(canva)
 
     def evaluate(self,varDict:Dict):
         result = None

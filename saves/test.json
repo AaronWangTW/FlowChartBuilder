@@ -17,13 +17,13 @@
             ]
         },
         "2": {
-            "x": 156,
-            "y": 78,
-            "blockType": "Input Block",
-            "inputCount": 1,
-            "inputVars": [
-                ""
-            ],
+            "x": 39,
+            "y": 93,
+            "blockType": "Set Variable",
+            "lastVarName": "",
+            "typeChoice": "int",
+            "value": "",
+            "varName": "",
             "nextNode": [
                 3
             ],
@@ -32,14 +32,13 @@
             ]
         },
         "3": {
-            "x": 151,
-            "y": 158,
-            "blockType": "Output Block",
-            "outputCount": 1,
-            "outputs": [
-                ""
-            ],
-            "outputType": "",
+            "x": 373,
+            "y": 123,
+            "blockType": "Set Variable",
+            "lastVarName": "",
+            "typeChoice": "int",
+            "value": "",
+            "varName": "",
             "nextNode": [
                 1
             ],
