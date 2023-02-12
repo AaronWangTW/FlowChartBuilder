@@ -1,8 +1,7 @@
 import tkinter as tk
-import math
 from tkinter import BOTH, LEFT, RIGHT, X, OptionMenu, StringVar, ttk, messagebox, font
 from typing import Any, Dict, List
-
+from appConsole import AppConsole
 
 class Node:
 
@@ -85,10 +84,10 @@ class Node:
     def placeNode(self):
         self.widget.pack()
 
-    def activate(self,varDict:Dict):
+    def activate(self):
         pass
 
-    def output(self,varDict:Dict):
+    def output(self,varDict:Dict, console:AppConsole):
         pass
 
     def destroy(self):
@@ -108,11 +107,11 @@ class Node:
                 canvas.delete(line[1])
                 self.connector.remove(line)
 
-    def run(self,varDict:Dict):
-        self.output(varDict)
-        self.activate(varDict)
+    def run(self,varDict:Dict, console:AppConsole):
+        self.output(varDict, console)
+        self.activate()
         for node in self.nextNode:
-            self.widget.after(500,lambda:node.run(varDict))
+            self.widget.after(500,lambda:node.run(varDict, console))
 
 class SetVariable(Node):
 
@@ -165,7 +164,7 @@ class SetVariable(Node):
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
-    def activate(self, varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
@@ -173,7 +172,7 @@ class SetVariable(Node):
     def setVarName(self, varName: str):
         self.varName = varName
 
-    def output(self, varDict: Dict):
+    def output(self, varDict: Dict, console:AppConsole):
         if self.varName.get() != "":
             varDict.pop(self.lastVarName,None)
             name = self.varName.get()
@@ -267,7 +266,7 @@ class ChangeVariable(Node):
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
-    def activate(self,varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
@@ -278,7 +277,7 @@ class ChangeVariable(Node):
         for name in self.varNames:
             self.firstVarChoice['menu'].add_command(label=name, command=tk._setit(self.firstVar, name))
 
-    def output(self, varDict: Dict):
+    def output(self, varDict: Dict, console:AppConsole):
         if self.firstVar.get() != "":
             name = self.firstVar.get()
             value = self.value.get()
@@ -457,7 +456,7 @@ class NewIfBlock(Node):
 
         return result
 
-    def activate(self, varDict:Dict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
@@ -467,17 +466,17 @@ class NewIfBlock(Node):
         self.trueBranchNode.destroy()
         self.falseBranchNode.destroy()
 
-    def output(self,varDict:Dict):
+    def output(self,varDict:Dict, console:AppConsole):
         pass
 
-    def run(self, varDict: Dict):
+    def run(self, varDict: Dict, console:AppConsole):
         self.output(varDict)
-        self.activate(varDict)
+        self.activate()
         result = self.evaluate(varDict)
         if result:
-            self.widget.after(500,lambda:self.trueBranchNode.run(varDict))
+            self.widget.after(500,lambda:self.trueBranchNode.run(varDict, console))
         else:
-            self.widget.after(500,lambda:self.falseBranchNode.run(varDict))
+            self.widget.after(500,lambda:self.falseBranchNode.run(varDict, console))
 
 class NewWhileLoop(Node):
     
@@ -726,10 +725,10 @@ class NewWhileLoop(Node):
 
         return result
 
-    def output(self, varDict:Dict):
+    def output(self, varDict:Dict, console:AppConsole):
         pass
 
-    def activate(self, varDict:Dict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
@@ -738,15 +737,15 @@ class NewWhileLoop(Node):
         super().destroy()
         self.loopEndNode.destroy()
 
-    def run(self, varDict: Dict):
+    def run(self, varDict: Dict, console:AppConsole):
         self.output(varDict)
-        self.activate(varDict)
+        self.activate()
         result = self.evaluate(varDict)
         if result:
             for node in self.nextNode:
-                self.widget.after(500,lambda:node.run(varDict))
+                self.widget.after(500,lambda:node.run(varDict, console))
         else:
-            self.widget.after(500,lambda:self.loopEndNode.run(varDict))
+            self.widget.after(500,lambda:self.loopEndNode.run(varDict, console))
 
 class NewForLoop(Node):
     
@@ -967,7 +966,7 @@ class NewForLoop(Node):
             case '//=':
                 varDict[iterator]//=value
 
-    def output(self, varDict:Dict):
+    def output(self, varDict:Dict, console:AppConsole):
 
         if self.loopInit:
             self.putIterator(varDict)
@@ -975,21 +974,21 @@ class NewForLoop(Node):
         else:
             self.modifyIterator(varDict)
 
-    def activate(self, varDict:Dict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
-    def run(self, varDict: Dict):
+    def run(self, varDict: Dict, console:AppConsole):
         self.output()
         self.activate()
         result = self.evaluate(varDict)
         if result:
             for node in self.nextNode:
-                self.widget.after(500,lambda:node.run(varDict))
+                self.widget.after(500,lambda:node.run(varDict, console))
         else:
             self.loopInit = True
-            self.widget.after(500,lambda:self.loopEndNode.run(varDict,True))
+            self.widget.after(500,lambda:self.loopEndNode.run(varDict,console,True))
     
     def destroy(self):
         super().destroy()
@@ -1025,12 +1024,12 @@ class TextNode(Node):
 
         self.window=canvas.create_window(xpos,ypos,window=self.widget, anchor="nw")
 
-    def activate(self, varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
-    def output(self,varDict):
+    def output(self,varDict, console:AppConsole):
         pass
 
     def removeConnector(self, canvas: tk.Canvas, node):
@@ -1066,22 +1065,22 @@ class LoopEndBlock(TextNode):
         self.lastNode: List[Node] = []
         self.connector = []
 
-    def activate(self, varDict, breakLoop=False):
+    def activate(self, breakLoop=False):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
-    def output(self,varDict:Dict, breakLoop = False):
+    def output(self,varDict:Dict,console:AppConsole ,breakLoop = False):
         pass
 
-    def run(self, varDict: Dict, breakLoop = False):
-        self.output()
+    def run(self, varDict: Dict,console:AppConsole, breakLoop = False):
+        self.output(varDict,console)
         self.activate()
         if breakLoop:
             for node in self.nextNode:
-                self.widget.after(500,lambda:node.run(varDict))
+                self.widget.after(500,lambda:node.run(varDict, console))
         else:
-            self.widget.after(500,lambda:self.parentLoop.run(varDict))
+            self.widget.after(500,lambda:self.parentLoop.run(varDict, console))
             
     
     def connect(self, canva: tk.Canvas):
@@ -1141,12 +1140,12 @@ class InputBlock(Node):
         self.widget.grid_columnconfigure(self.inputCount+1,weight=1)
         self.widget.config(width=150+self.inputCount*50)
 
-    def activate(self, varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
-    def output(self,varDict):
+    def output(self,varDict, console:AppConsole):
         pass
 
 class OutputBlock(Node):
@@ -1247,12 +1246,12 @@ class OutputBlock(Node):
         for name in self.varNames:
             self.outputVar['menu'].add_command(label=name, command=tk._setit(self.outputs[0], name))
 
-    def activate(self, varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
-    def output(self,varDict):
+    def output(self,varDict, console:AppConsole):
         pass
 
 class StartBlock(Node):
@@ -1283,12 +1282,12 @@ class StartBlock(Node):
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
 
-    def activate(self,varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#83c282'))
 
-    def output(self,varDict):
+    def output(self,varDict, console:AppConsole):
         pass
 
 class EndBlock(Node):
@@ -1321,7 +1320,7 @@ class EndBlock(Node):
         self.widget.place(x=0, y=0)
         self.window=canvas.create_window(200,0,window=self.widget, anchor="nw")
 
-    def activate(self, varDict):
+    def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#c46e71'))
@@ -1329,6 +1328,6 @@ class EndBlock(Node):
     def resetVars(self):
         self.varReference = self.initVarDict.copy()
 
-    def output(self, varDict):
+    def output(self, varDict, console:AppConsole):
         self.widget.after(1000,self.resetVars)
         return

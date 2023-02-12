@@ -11,6 +11,7 @@ from node import Node, SetVariable, NewIfBlock, NewWhileLoop, NewForLoop, Change
 
 import nodeSerializer
 import nodeConstructor
+import appConsole
 
 
 class App:
@@ -22,6 +23,8 @@ class App:
                        height=760, background="white", scrollregion=(0, 0, 2000, 2000))
     hbar = tk.Scrollbar(workSpace, orient="horizontal")
     vbar = tk.Scrollbar(workSpace, orient="vertical")
+
+    console = appConsole.AppConsole()
 
     rootNode: Node = None
     nextNode: Node = None
@@ -369,7 +372,8 @@ class App:
             if node.blockType == Node.ENDBLOCK:
                 node.initVarDict = App.variables.copy()
                 node.varReference = App.variables
-        startNode.run(App.variables)
+        startNode.run(App.variables, App.console)
+        App.console.show()
 
     def new():
         for node in App.nodes:
@@ -614,16 +618,16 @@ class App:
         yScrollBar.pack(side=RIGHT, fill="y")
 
         chartListSpace.configure(yscrollcommand=yScrollBar.set)
-        chartListSpace.bind("<Configure>", lambda e: chartListSpace.configure(
-            scrollregion=chartListSpace.bbox("all")))
 
-        chartListFrame = tk.Frame(chartListSpace, background="#FFF")
+        chartListFrame = tk.Frame(chartListSpace)
         frameId = chartListSpace.create_window(
             (0, 0), window=chartListFrame, anchor="nw")
 
-        def resizeFrame(e):
+        def configureSpace(e):
             chartListSpace.itemconfig(frameId, width=e.width)
-        chartListSpace.bind("<Configure>", resizeFrame)
+            chartListSpace.configure(
+            scrollregion=chartListSpace.bbox("all"))
+        chartListSpace.bind("<Configure>", configureSpace)
 
         chartListWrapper.pack(fill="both", expand=True, padx=10, pady=10)
         selectWrapper.pack(fill="both", expand=True, padx=10, pady=10)
@@ -673,7 +677,7 @@ class App:
 
     def initialize():
         App.root.title("Flowchart Builder")
-        App.root.geometry("1200x760+200+150")
+        App.root.geometry("1200x760+100+100")
         App.root.resizable(False, False)
 
         start = StartBlock(App.canvas)
