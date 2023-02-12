@@ -172,7 +172,7 @@ class SetVariable(Node):
     def setVarName(self, varName: str):
         self.varName = varName
 
-    def output(self, varDict: Dict, console:AppConsole):
+    def output(self, varDict: Dict, console:AppConsole = None):
         if self.varName.get() != "":
             varDict.pop(self.lastVarName,None)
             name = self.varName.get()
@@ -190,8 +190,11 @@ class SetVariable(Node):
                         varDict[name] = float(value)
                     else:
                         varDict[name] = None
+            if console:
+                console.print(f"Variable: {name} value updated to {value}")
+                console.addVariableTrack(name,varDict)
         self.lastVarName = self.varName.get()
-
+        
 class ChangeVariable(Node):
 
     types = ['input','var']
@@ -277,10 +280,20 @@ class ChangeVariable(Node):
         for name in self.varNames:
             self.firstVarChoice['menu'].add_command(label=name, command=tk._setit(self.firstVar, name))
 
-    def output(self, varDict: Dict, console:AppConsole):
+    def output(self, varDict: Dict, console:AppConsole = None):
         if self.firstVar.get() != "":
             name = self.firstVar.get()
             value = self.value.get()
+            match varDict[name]:
+                case int():
+                    value = int(value)
+                case float():
+                    value = float(value)
+                case str():
+                    pass
+                case _:
+                    raise Exception("Unexpected variable type detected")
+
             match self.operator.get():
                 case '=':
                     if self.typeChoice.get() == 'input':
@@ -317,6 +330,9 @@ class ChangeVariable(Node):
                         varDict[name] *= value
                     else:
                         varDict[name] *= varDict[value]
+            if console:
+                console.print(f"Variable: {name} value changed to {varDict[name]}")
+                console.addVariableTrack(name,varDict)
 
 class NewIfBlock(Node):
     
@@ -466,13 +482,13 @@ class NewIfBlock(Node):
         self.trueBranchNode.destroy()
         self.falseBranchNode.destroy()
 
-    def output(self,varDict:Dict, console:AppConsole):
-        pass
+    def output(self,varDict:Dict, console:AppConsole, result:bool):
+        console.print(f"Evaluate: {self.firstValue.get()} {self.operator.get()} {self.secondValue.get()} - {result}")
 
     def run(self, varDict: Dict, console:AppConsole):
-        self.output(varDict)
         self.activate()
         result = self.evaluate(varDict)
+        self.output(varDict, console, result)
         if result:
             self.widget.after(500,lambda:self.trueBranchNode.run(varDict, console))
         else:
@@ -725,8 +741,13 @@ class NewWhileLoop(Node):
 
         return result
 
-    def output(self, varDict:Dict, console:AppConsole):
-        pass
+    def output(self, varDict:Dict, console:AppConsole, result:bool):
+        text = ""
+        if result:
+            text = "loop continues"
+        else:
+            text = "loop breaks"
+        console.print(f"While {self.var.get()} {self.operator.get()} {self.targetValue.get()} - {text}")
 
     def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
@@ -738,14 +759,14 @@ class NewWhileLoop(Node):
         self.loopEndNode.destroy()
 
     def run(self, varDict: Dict, console:AppConsole):
-        self.output(varDict)
         self.activate()
         result = self.evaluate(varDict)
+        self.output(varDict, console, result)
         if result:
             for node in self.nextNode:
                 self.widget.after(500,lambda:node.run(varDict, console))
         else:
-            self.widget.after(500,lambda:self.loopEndNode.run(varDict, console))
+            self.widget.after(500,lambda:self.loopEndNode.run(varDict, console, breakLoop=True))
 
 class NewForLoop(Node):
     
@@ -966,7 +987,7 @@ class NewForLoop(Node):
             case '//=':
                 varDict[iterator]//=value
 
-    def output(self, varDict:Dict, console:AppConsole):
+    def output(self, varDict:Dict, console:AppConsole, result):
 
         if self.loopInit:
             self.putIterator(varDict)
@@ -974,15 +995,22 @@ class NewForLoop(Node):
         else:
             self.modifyIterator(varDict)
 
+        text = ""
+        if result:
+            text = "loop continues"
+        else:
+            text = "loop breaks"
+        console.print(f"For {self.iterator.get()} {self.operator.get()} {self.targetValue.get()} - {text}, {self.iterator.get()} = {varDict[self.iterator.get()]}")
+
     def activate(self):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
         self.widget.after(
             500, lambda: self.widget.config(background='#e6e6e6'))
 
     def run(self, varDict: Dict, console:AppConsole):
-        self.output()
         self.activate()
         result = self.evaluate(varDict)
+        self.output(varDict,console,result)
         if result:
             for node in self.nextNode:
                 self.widget.after(500,lambda:node.run(varDict, console))
@@ -1146,7 +1174,10 @@ class InputBlock(Node):
             500, lambda: self.widget.config(background='#e6e6e6'))
 
     def output(self,varDict, console:AppConsole):
-        pass
+        for var in self.inputVars:
+            console.input(var.get(),varDict)
+            console.print(f"Variable: {var.get()} inputted")
+            console.addVariableTrack(var.get(),varDict)
 
 class OutputBlock(Node):
 
@@ -1252,7 +1283,12 @@ class OutputBlock(Node):
             500, lambda: self.widget.config(background='#e6e6e6'))
 
     def output(self,varDict, console:AppConsole):
-        pass
+        match self.outputType.get():
+            case 'var':
+                for output in self.outputs:
+                    console.print(f"Output Variable: {output.get()} : {varDict[output.get()]}")
+            case 'string':
+                console.print(f"Output: {self.initOutput.get()}")
 
 class StartBlock(Node):
     
@@ -1288,7 +1324,7 @@ class StartBlock(Node):
             500, lambda: self.widget.config(background='#83c282'))
 
     def output(self,varDict, console:AppConsole):
-        pass
+        console.print("Flowchart Started")
 
 class EndBlock(Node):
     
@@ -1325,9 +1361,5 @@ class EndBlock(Node):
         self.widget.after(
             500, lambda: self.widget.config(background='#c46e71'))
 
-    def resetVars(self):
-        self.varReference = self.initVarDict.copy()
-
     def output(self, varDict, console:AppConsole):
-        self.widget.after(1000,self.resetVars)
-        return
+        console.print("Flowchart Ended")

@@ -13,37 +13,22 @@
             "y": 0,
             "blockType": "End Block",
             "lastNode": [
-                3
+                2
             ]
         },
         "2": {
-            "x": 39,
-            "y": 93,
+            "x": 48,
+            "y": 86,
             "blockType": "Set Variable",
-            "lastVarName": "",
+            "lastVarName": "test",
             "typeChoice": "int",
-            "value": "",
-            "varName": "",
-            "nextNode": [
-                3
-            ],
-            "lastNode": [
-                0
-            ]
-        },
-        "3": {
-            "x": 373,
-            "y": 123,
-            "blockType": "Set Variable",
-            "lastVarName": "",
-            "typeChoice": "int",
-            "value": "",
-            "varName": "",
+            "value": "1",
+            "varName": "test",
             "nextNode": [
                 1
             ],
             "lastNode": [
-                2
+                0
             ]
         }
     },

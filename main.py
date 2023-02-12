@@ -365,15 +365,15 @@ class App:
             App.rootNode.removeConnector(App.canvas, App.nextNode)
 
     def run():
-        print("run")
         for node in App.nodes:
             if node.blockType == Node.STARTBLOCK:
                 startNode = node
             if node.blockType == Node.ENDBLOCK:
                 node.initVarDict = App.variables.copy()
                 node.varReference = App.variables
-        startNode.run(App.variables, App.console)
         App.console.show()
+        App.console.reset()
+        startNode.run(App.variables, App.console)
 
     def new():
         for node in App.nodes:
@@ -558,6 +558,8 @@ class App:
                     node = constructor.outputCon(nodeDict, id)
                 case Node.STARTBLOCK:
                     App.canvas.move(App.nodes[0].window,nodeDict['x'],nodeDict['y'])
+                    for nodeId in nodeDict['nextNode']:
+                        App.nodes[0].nextNode.append(nodeId)
                     continue
                 case Node.ENDBLOCK:
                     App.canvas.move(App.nodes[1].window,nodeDict['x']-200,nodeDict['y'])
