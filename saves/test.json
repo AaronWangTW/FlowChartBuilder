@@ -9,30 +9,73 @@
             ]
         },
         "1": {
-            "x": 200,
-            "y": 0,
+            "x": 343,
+            "y": 662,
             "blockType": "End Block",
             "lastNode": [
-                2
+                4
             ]
         },
         "2": {
-            "x": 48,
-            "y": 86,
+            "x": 33,
+            "y": 85,
             "blockType": "Set Variable",
-            "lastVarName": "test",
+            "lastVarName": "hi",
             "typeChoice": "int",
-            "value": "1",
-            "varName": "test",
+            "value": "3",
+            "varName": "hi",
             "nextNode": [
-                1
+                3
             ],
             "lastNode": [
                 0
             ]
+        },
+        "3": {
+            "x": 38,
+            "y": 249,
+            "blockType": "While Loop",
+            "var": "hi",
+            "operator": "<",
+            "targetType": "int",
+            "targetValue": "5",
+            "loopEndNode": 4,
+            "nextNode": [
+                5
+            ],
+            "lastNode": [
+                2
+            ]
+        },
+        "4": {
+            "x": 151,
+            "y": 608,
+            "blockType": "Loop End Block",
+            "parentLoop": 3,
+            "nextNode": [
+                1
+            ],
+            "lastNode": [
+                5
+            ]
+        },
+        "5": {
+            "x": 101,
+            "y": 512,
+            "blockType": "Input Block",
+            "inputCount": 1,
+            "inputVars": [
+                "hi"
+            ],
+            "nextNode": [
+                4
+            ],
+            "lastNode": [
+                3
+            ]
         }
     },
     "variables": {
-        "test": 1
+        "hi": 6
     }
 }

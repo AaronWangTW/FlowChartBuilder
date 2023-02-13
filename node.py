@@ -577,6 +577,12 @@ class NewWhileLoop(Node):
         self.placeChild(self.loopEndNode, 100, 300)
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+        for node in self.nextNode:
+            if type(node) == int:
+                return
+        for node in self.lastNode:
+            if type(node) == int:
+                return
         self.connect(canvas)
 
     def changeType(self):
@@ -872,6 +878,12 @@ class NewForLoop(Node):
         self.placeChild(self.loopEndNode, 100, 300)
 
         self.window=canvas.create_window(0,0,window=self.widget, anchor="nw")
+        for node in self.nextNode:
+            if type(node) == int:
+                return
+        for node in self.lastNode:
+            if type(node) == int:
+                return
         self.connect(canvas)
 
     def connectLoopEndNode(self,canva:tk.Canvas):
@@ -1131,10 +1143,10 @@ class InputBlock(Node):
         self.titleLabel = tk.Label(self.widget, text="Input",font=fontGroup, background="#e6e6e6", width=4)
         self.titleLabel.grid(row=0,column=0)
 
-        initVar = StringVar()
-        self.inputVars: List[tk.StringVar] = [initVar]
+        self.initVar = StringVar()
+        self.inputVars: List[tk.StringVar] = [self.initVar]
 
-        initEntry = tk.Entry(self.widget,textvariable=initVar,borderwidth=0,width=6)
+        initEntry = tk.Entry(self.widget,textvariable=self.initVar,borderwidth=0,width=6)
         self.inputEntries: List[tk.Entry] = [initEntry]
         initEntry.grid(row=0,column=1) 
 

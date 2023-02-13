@@ -125,7 +125,13 @@ class NodeConstructor:
         self.canvas.move(result.window,nodeDict['x'],nodeDict['y'])
 
         result.inputCount = nodeDict['inputCount']
-        result.inputVars = nodeDict['inputVars']
+        count = 0
+        for var in nodeDict['inputVars']:
+            if count == 0:
+                result.initVar.set(var)
+                continue
+            result.addInput()
+            result.inputVars[-1].set(var)
 
         for nodeId in nodeDict['nextNode']:
             result.nextNode.append(nodeId)
@@ -141,7 +147,13 @@ class NodeConstructor:
         self.canvas.move(result.window,nodeDict['x'],nodeDict['y'])
 
         result.outputCount = nodeDict['outputCount']
-        result.outputs = nodeDict['outputs']
+        count = 0
+        for var in nodeDict['outputs']:
+            if count == 0:
+                result.initOutput.set(var)
+                continue
+            result.addInput()
+            result.outputs[-1].set(var)
         result.outputType.set(nodeDict['outputType'])
 
         for nodeId in nodeDict['nextNode']:

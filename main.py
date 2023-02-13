@@ -543,14 +543,22 @@ class App:
                 case Node.IFTRUEBLOCK:
                     parentNodeId = nodeDict['lastNode'][0]
                     App.canvas.move(App.nodes[parentNodeId].trueBranchNode.window,nodeDict['x'],nodeDict['y']-280)
+                    for nodeId in nodeDict['nextNode']:
+                        App.nodes[parentNodeId].trueBranchNode.nextNode.append(nodeId)
                     continue
                 case Node.IFFALSEBLOCK:
                     parentNodeId = nodeDict['lastNode'][0]
                     App.canvas.move(App.nodes[parentNodeId].falseBranchNode.window,nodeDict['x']-300,nodeDict['y']-280)
+                    for nodeId in nodeDict['nextNode']:
+                        App.nodes[parentNodeId].falseBranchNode.nextNode.append(nodeId)
                     continue
                 case Node.LOOPENDBLOCK:
                     parentNodeId = nodeDict['parentLoop']
                     App.canvas.move(App.nodes[parentNodeId].loopEndNode.window,nodeDict['x']-100,nodeDict['y']-300)
+                    for nodeId in nodeDict['nextNode']:
+                        App.nodes[parentNodeId].loopEndNode.nextNode.append(nodeId)
+                    for nodeId in nodeDict['lastNode']:
+                        App.nodes[parentNodeId].loopEndNode.lastNode.append(nodeId)
                     continue
                 case Node.INPUTBLOCK:
                     node = constructor.inputCon(nodeDict, id)
@@ -727,7 +735,7 @@ class App:
         App.vbar.config(command=App.canvas.yview)
         # scroll region set to all so all objects follow
         App.canvas.config(xscrollcommand=App.hbar.set,
-                          yscrollcommand=App.vbar.set, scrollregion=App.canvas.bbox("all"))
+                          yscrollcommand=App.vbar.set, scrollregion=(0, 0, 2000, 2000))
         # setting up scrolling binding
         App.canvas.bind_all("<MouseWheel>", lambda e: App.canvas.yview_scroll(
             int(-1*(e.delta/120)), "units"))
