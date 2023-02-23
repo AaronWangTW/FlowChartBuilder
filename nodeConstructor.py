@@ -21,9 +21,9 @@ class NodeConstructor:
         result.varName.set(nodeDict['varName'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -39,9 +39,9 @@ class NodeConstructor:
         result.operator.set(nodeDict['operator'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -55,7 +55,7 @@ class NodeConstructor:
         result.secondValue.set(nodeDict['secondValue'])
 
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -71,9 +71,9 @@ class NodeConstructor:
         result.changeValue.set(nodeDict['changeValue'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -87,9 +87,9 @@ class NodeConstructor:
         result.targetValue.set(nodeDict['targetValue'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -99,9 +99,9 @@ class NodeConstructor:
         result.placeNode(self.canvas,nodeDict['x'],nodeDict['y'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -112,9 +112,9 @@ class NodeConstructor:
         self.canvas.move(result.window,nodeDict['x'],nodeDict['y'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -134,9 +134,9 @@ class NodeConstructor:
             result.inputVars[-1].set(var)
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 
@@ -157,9 +157,9 @@ class NodeConstructor:
         result.outputType.set(nodeDict['outputType'])
 
         for nodeId in nodeDict['nextNode']:
-            result.nextNode.append(nodeId)
+            result.nextNode.append(int(nodeId))
         for nodeId in nodeDict['lastNode']:
-            result.lastNode.append(nodeId)
+            result.lastNode.append(int(nodeId))
 
         return result
 

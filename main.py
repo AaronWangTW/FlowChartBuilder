@@ -173,6 +173,31 @@ class App:
             messagebox.showwarning(
                 "Deletion Error", "Cannot delete start or end block")
             return
+        
+        if App.rootNode.blockType == Node.NEWFORLOOP or App.rootNode.blockType == Node.NEWWHILELOOP:
+            loopEndNode = App.rootNode.loopEndNode
+            for node in loopEndNode.nextNode:
+                node.lastNode.remove(loopEndNode)
+                node.removeConnector(App.canvas, loopEndNode)
+            for node in loopEndNode.lastNode:
+                node.nextNode.remove(loopEndNode)
+                node.removeConnector(App.canvas, loopEndNode)
+            App.nodes.remove(loopEndNode)
+            loopEndNode.deleteConnectors(App.canvas)
+            App.canvas.delete(loopEndNode.window)
+
+        if App.rootNode.blockType == Node.LOOPENDBLOCK:
+            parentNode = App.rootNode.parentLoop
+            for node in parentNode.nextNode:
+                node.lastNode.remove(parentNode)
+                node.removeConnector(App.canvas, parentNode)
+            for node in parentNode.lastNode:
+                node.nextNode.remove(parentNode)
+                node.removeConnector(App.canvas, parentNode)
+            App.nodes.remove(parentNode)
+            parentNode.deleteConnectors(App.canvas)
+            App.canvas.delete(parentNode.window)
+
 
         for node in App.rootNode.nextNode:
             node.lastNode.remove(App.rootNode)
@@ -571,6 +596,8 @@ class App:
                     continue
                 case Node.ENDBLOCK:
                     App.canvas.move(App.nodes[1].window,nodeDict['x']-200,nodeDict['y'])
+                    for nodeId in nodeDict['lastNode']:
+                        App.nodes[1].lastNode.append(nodeId)
                     continue
                 case _:
                     raise Exception("Unexpected node type detected")
@@ -589,16 +616,17 @@ class App:
             index = 0
             for n in node.lastNode:
                 nId = n
-                node.lastNode[index] = App.nodes[nId]
+                node.lastNode[index] = App.nodes[int(nId)]
             index = 0
             for n in node.nextNode:
                 nId = n
-                node.nextNode[index] = App.nodes[nId]
+                node.nextNode[index] = App.nodes[int(nId)]
         for node in App.nodes:
             node.connect(App.canvas)
 
         App.idCount = int(nodeIDs[-1])+1
         App.root.title("Flowchart Builder - "+chartName)
+        App.currentChartName = chartName
 
     def openMenu():
         def close_event():

@@ -762,7 +762,7 @@ class NewWhileLoop(Node):
 
     def destroy(self):
         super().destroy()
-        self.loopEndNode.destroy()
+        self.loopEndNode.widget.destroy()
 
     def run(self, varDict: Dict, console:AppConsole):
         self.activate()
@@ -1032,7 +1032,7 @@ class NewForLoop(Node):
     
     def destroy(self):
         super().destroy()
-        self.loopEndNode.destroy()
+        self.loopEndNode.widget.destroy()
 
 class TextNode(Node):
 
@@ -1104,6 +1104,8 @@ class LoopEndBlock(TextNode):
         self.nextNode: List[Node] = []
         self.lastNode: List[Node] = []
         self.connector = []
+
+        self.destroy = parentLoop.destroy
 
     def activate(self, breakLoop=False):
         self.widget.after(0, lambda: self.widget.config(background='#ccafaf'))
