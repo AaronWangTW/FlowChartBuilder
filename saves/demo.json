@@ -5,14 +5,16 @@
             "y": 18,
             "blockType": "Start Block",
             "nextNode": [
-                2
+                "2"
             ]
         },
         "1": {
-            "x": 512,
-            "y": 249,
+            "x": 175,
+            "y": 1135,
             "blockType": "End Block",
-            "lastNode": []
+            "lastNode": [
+                6
+            ]
         },
         "2": {
             "x": 49,
@@ -23,7 +25,7 @@
             "value": "1",
             "varName": "test",
             "nextNode": [
-                3
+                "3"
             ],
             "lastNode": [
                 0
@@ -37,34 +39,34 @@
             "operator": "<",
             "secondType": "int",
             "secondValue": "3",
-            "trueBranchNode": 4,
-            "falseBranchNode": 5,
+            "trueBranchNode": 3,
+            "falseBranchNode": 4,
             "nextNode": [
-                4,
-                5
+                3,
+                4
             ],
             "lastNode": [
-                2
+                "2"
             ]
         },
-        "4": {
+        "3": {
             "x": 53,
             "y": 532,
             "blockType": "If True Branch",
             "nextNode": [
-                6
+                "6"
             ],
             "lastNode": [
-                3
+                "3"
             ]
         },
-        "5": {
+        "4": {
             "x": 275,
             "y": 530,
             "blockType": "If False Branch",
             "nextNode": [],
             "lastNode": [
-                3
+                "3"
             ]
         },
         "6": {
@@ -75,22 +77,24 @@
             "operator": "<",
             "targetType": "int",
             "targetValue": "2",
-            "loopEndNode": 7,
+            "loopEndNode": 6,
             "nextNode": [
-                8
+                "8"
             ],
             "lastNode": [
-                4
+                3
             ]
         },
-        "7": {
+        "6": {
             "x": 175,
             "y": 1027,
             "blockType": "Loop End Block",
-            "parentLoop": 6,
-            "nextNode": [],
+            "parentLoop": "6",
+            "nextNode": [
+                1
+            ],
             "lastNode": [
-                8
+                "8"
             ]
         },
         "8": {
@@ -102,14 +106,12 @@
             "value": "1",
             "operator": "+=",
             "nextNode": [
-                7
+                6
             ],
             "lastNode": [
-                6
+                "6"
             ]
         }
     },
-    "variables": {
-        "test": 1
-    }
+    "variables": {}
 }

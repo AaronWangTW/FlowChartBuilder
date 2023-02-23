@@ -566,13 +566,13 @@ class App:
                 case Node.NEWWHILELOOP:
                     node = constructor.whileLoopCon(nodeDict, id)
                 case Node.IFTRUEBLOCK:
-                    parentNodeId = nodeDict['lastNode'][0]
+                    parentNodeId = int(nodeDict['lastNode'][0])
                     App.canvas.move(App.nodes[parentNodeId].trueBranchNode.window,nodeDict['x'],nodeDict['y']-280)
                     for nodeId in nodeDict['nextNode']:
                         App.nodes[parentNodeId].trueBranchNode.nextNode.append(nodeId)
                     continue
                 case Node.IFFALSEBLOCK:
-                    parentNodeId = nodeDict['lastNode'][0]
+                    parentNodeId = int(nodeDict['lastNode'][0])
                     App.canvas.move(App.nodes[parentNodeId].falseBranchNode.window,nodeDict['x']-300,nodeDict['y']-280)
                     for nodeId in nodeDict['nextNode']:
                         App.nodes[parentNodeId].falseBranchNode.nextNode.append(nodeId)
@@ -616,11 +616,13 @@ class App:
             index = 0
             for n in node.lastNode:
                 nId = n
-                node.lastNode[index] = App.nodes[int(nId)]
+                if type(nId) == int or type(nId) == str:
+                    node.lastNode[index] = App.nodes[int(nId)]
             index = 0
             for n in node.nextNode:
                 nId = n
-                node.nextNode[index] = App.nodes[int(nId)]
+                if type(nId) == int or type(nId) == str:
+                    node.nextNode[index] = App.nodes[int(nId)]
         for node in App.nodes:
             node.connect(App.canvas)
 

@@ -1,0 +1,74 @@
+{
+    "nodes": {
+        "0": {
+            "x": 0,
+            "y": 0,
+            "blockType": "Start Block",
+            "nextNode": [
+                "2"
+            ]
+        },
+        "1": {
+            "x": 145,
+            "y": 557,
+            "blockType": "End Block",
+            "lastNode": [
+                3
+            ]
+        },
+        "2": {
+            "x": 97,
+            "y": 107,
+            "blockType": "If Statement",
+            "firstValue": "",
+            "operator": "",
+            "secondType": "",
+            "secondValue": "",
+            "trueBranchNode": 3,
+            "falseBranchNode": 4,
+            "nextNode": [
+                3,
+                4
+            ],
+            "lastNode": [
+                0
+            ]
+        },
+        "3": {
+            "x": 94,
+            "y": 405,
+            "blockType": "If True Branch",
+            "nextNode": [
+                1
+            ],
+            "lastNode": [
+                "2"
+            ]
+        },
+        "4": {
+            "x": 397,
+            "y": 430,
+            "blockType": "If False Branch",
+            "nextNode": [
+                5
+            ],
+            "lastNode": [
+                "2"
+            ]
+        },
+        "5": {
+            "x": 356,
+            "y": 553,
+            "blockType": "Set Variable",
+            "lastVarName": "",
+            "typeChoice": "int",
+            "value": "",
+            "varName": "",
+            "nextNode": [],
+            "lastNode": [
+                4
+            ]
+        }
+    },
+    "variables": {}
+}

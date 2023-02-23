@@ -449,6 +449,12 @@ class NewIfBlock(Node):
         self.placeChild(self.falseBranchNode, 300,280)
 
         self.window=canvas.create_window(50,0,window=self.widget, anchor="nw")
+        for node in self.nextNode:
+            if type(node) == int:
+                return
+        for node in self.lastNode:
+            if type(node) == int:
+                return
         self.connect(canvas)
     
     def evaluate(self,varDict:Dict):
